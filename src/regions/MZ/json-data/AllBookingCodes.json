@@ -1,0 +1,12 @@
+{
+  "totalPages": 1,
+  "pages": [
+    {
+      "page": 1,
+      "size": 20,
+      "hasNextPage": false,
+      "hasPreviousPage": false,
+      "result": []
+    }
+  ]
+}

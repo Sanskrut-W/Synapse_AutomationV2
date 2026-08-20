@@ -1,0 +1,67 @@
+{
+  "basicInfo": {
+    "mobile": "771002880",
+    "password": "123456789",
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "abc@gmail.com"
+  },
+  "mobileValidation": {
+    "valid": "771002880",
+    "short": "12345",
+    "long": "98765432109876",
+    "alphabetic": "987abc321",
+    "specialChar": "987-654-321"
+  },
+  "passwordValidation": {
+    "default": "Password12",
+    "strong": "StrongPass123!",
+    "withNumbers": "Password12345",
+    "withSpecialChars": "Password!@#$%",
+    "minLen": "Pass123!",
+    "maxLen": "ThisIsAVeryLongPassword123!",
+    "allTypes": "Abc123$@!",
+    "withSpaces": "My Pass 123",
+    "weak": "123456",
+    "tooLong": "ThisPasswordIsWayTooLongForTheField1234567890",
+    "tooShort": "Pw1"
+  },
+  "nameValidation": {
+    "validFirst": "John",
+    "validLast": "Doe",
+    "firstWithSpaces": "John Paul",
+    "lastWithSpaces": "Van Der Beek",
+    "firstWithHyphen": "Jean-Luc",
+    "lastWithHyphen": "Picard-Smith",
+    "firstWithNumbers": "John123",
+    "lastWithNumbers": "Doe456",
+    "firstWithSpecial": "John$",
+    "lastWithSpecial": "Doe@"
+  },
+  "idValidation": {
+    "miscID": "12hshkqiqsb",
+    "validSAId": "9001015000080",
+    "shortSAId": "9001015000",
+    "saIdWithLetters": "900101500008A",
+    "saIdWithSpecial": "900101-5000080",
+    "validPassport": "A12345678",
+    "shortPassport": "A123",
+    "passportWithSpecial": "A123-456",
+    "allNumericPassport": "123456789"
+  },
+  "codeValidation": {
+    "mixedCase": "CodeAbc123",
+    "withNumbers": "CODE12345",
+    "withSpecial": "CODE-123!",
+    "validReferral": "REF123",
+    "lowercaseReferral": "ref123",
+    "uppercaseReferral": "REF123",
+    "referralWithNumbers": "MyRef99",
+    "referralWithHyphen": "My-Ref-99"
+  },
+ 
+  "myBetsCredentials": {
+    "mobile": "222212222",
+    "password": "1234567890"
+  }
+}

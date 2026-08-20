@@ -1,0 +1,78 @@
+{
+    "projectName": "Betway Automation V2",
+    "version": "1.0.0",
+    "framework": "playwright",
+    "description": "Betway Playwright Automation Framework — shared-core rewrite (all 8 regions)",
+    "inputs": [
+        {
+            "id": "region",
+            "label": "Target Region",
+            "type": "select",
+            "options": [
+                "ZA",
+                "BW",
+                "GH",
+                "MW",
+                "MZ",
+                "NG",
+                "TZ",
+                "ZM"
+            ],
+            "default": "ZA"
+        },
+        {
+            "id": "suiteType",
+            "label": "Test Suite",
+            "type": "select",
+            "options": [
+                {
+                    "label": "Smoke",
+                    "value": "smoke"
+                },
+                {
+                    "label": "Regression",
+                    "value": "regression"
+                }
+            ],
+            "default": "smoke"
+        }
+    ],
+    "discovery": {
+        "method": "filesystem",
+        "lookupPath": "src/regions/{region}/tests/{suiteType}",
+        "pathMappings": {
+            "suiteType": {
+                "smoke": "smoke",
+                "regression": "modules"
+            }
+        },
+        "grouping": "directory",
+        "filePattern": "**/*.spec.ts"
+    },
+    "execution": {
+        "command": "npx playwright test",
+        "scriptPathPattern": "src/regions/{region}/tests/{suiteType}/{script}/{script}.spec.ts",
+        "args": [
+            "{scriptPaths}",
+            "--config=playwright.{region}.config.ts",
+            "--headed"
+        ],
+        "env": {
+            "REGION": "{region}",
+            "PLAYWRIGHT_JSON_OUTPUT_NAME": "test-results-{runId}.json"
+        }
+    },
+    "reporting": {
+        "parser": "playwright-json",
+        "resultsFile": "src/regions/{region}/reports/test-results-{runId}.json",
+        "artifacts": {
+            "allure": {
+                "enabled": true,
+                "rawDir": "src/regions/{region}/reports/allure-results",
+                "cleanBeforeRun": true,
+                "generateCommand": "npx allure generate src/regions/{region}/reports/allure-results --clean -o src/regions/{region}/reports/allure-reports/{runId}",
+                "reportDir": "src/regions/{region}/reports/allure-reports/{runId}"
+            }
+        }
+    }
+}

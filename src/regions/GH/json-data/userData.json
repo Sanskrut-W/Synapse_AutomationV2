@@ -1,0 +1,24 @@
+{
+  "user1": {
+    "mobile": "999654321",
+    "password": "12345",
+    "name": "KP Test",
+    "email": "test@test.com"
+  },
+  "user2": {
+    "mobile": "999988882",
+    "password": "123456789"
+  },
+  "user3": {
+    "mobile": "999654321",
+    "password": "12345"
+  },
+  "user4": {
+    "mobile": "123456788",
+    "password": "12345"
+  },
+  "user5": {
+    "mobile": "999654321",
+    "password": "12345"
+  }
+}

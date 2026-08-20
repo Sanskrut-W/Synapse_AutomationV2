@@ -1,0 +1,15 @@
+node_modules/
+
+# Playwright / test outputs
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# Per-region generated reports & screenshots
+src/regions/*/reports/
+src/regions/*/screenshots/
+
+# Env
+.env
+.env.local
