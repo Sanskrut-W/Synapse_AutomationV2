@@ -120,6 +120,12 @@ export class BetSaverPage extends BasePage {
         await this.page.waitForTimeout(2000);
         await this.page.reload();
         await this.page.waitForLoadState('domcontentloaded');
+        // Confirmed live: right after a reload, there's a brief window where client-side session
+        // hydration hasn't finished — the header can momentarily show a logged-out state ("Welcome"
+        // absent) even though the user is genuinely authenticated. Since this method is immediately
+        // followed by another reload inside OddsSelectionAbove(), waiting for a reliable post-login
+        // indicator here prevents the whole flow from racing ahead on stale, logged-out-looking markup.
+        await this.page.getByRole('button', { name: 'Deposit' }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => { /* best-effort */ });
     }
 
     async closePopup() {
@@ -138,12 +144,15 @@ export class BetSaverPage extends BasePage {
     }
 
     async navigateToMyBets() {
-        await this.page.goto('https://new.betway.co.za/sport/soccer/upcoming?account=my-bets');
+        // Was hardcoded to https://new.betway.co.za/... — silently ran every non-ZA region's
+        // BetSaver "navigate to My Bets" step against the ZA site instead of the active region's
+        // own baseURL. Relative paths resolve against playwright.<REGION>.config.ts's baseURL.
+        await this.page.goto('/sport/soccer/upcoming?account=my-bets');
         await this.page.waitForLoadState('domcontentloaded');
     }
 
     async outrightsSelection() {
-        await this.page.goto('https://new.betway.co.za/sport/football/outrights');
+        await this.page.goto('/sport/football/outrights');
         await this.page.waitForTimeout(2000);
         const firstOdds = this.page.locator('(//div[contains(@class,"odd-value")])[1]');
         if (await firstOdds.isVisible()) {
@@ -152,7 +161,7 @@ export class BetSaverPage extends BasePage {
     }
 
     async clickBookingCode() {
-        await this.page.goto('https://new.betway.co.za/sport/soccer');
+        await this.page.goto('/sport/soccer');
         await this.page.waitForTimeout(1000);
         await this.loc.clickBookingCode.click();
         await this.page.waitForTimeout(1000);

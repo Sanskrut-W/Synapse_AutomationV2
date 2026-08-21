@@ -17,7 +17,11 @@ export class BetInfluencerModal extends BetslipPage {
 
         const inherited = this.loc;
         this.loc = { ...inherited, ...this.build('betInfluencer', {
-            summaryButton: first(text('summary')),
+            // Confirmed live: an unscoped "summary" text search matches the sidebar's "Bonus
+            // Summary" link (outside #my-account-main) BEFORE the real "Summary" tab inside the
+            // Bet Influencer panel — clicking it navigated to the wrong section entirely. Affects
+            // every region (confirmed on both GH and ZA), not just one.
+            summaryButton: (root) => root.locator('#my-account-main').getByText('summary', { exact: false }).first(),
             detailButton: first(text('details')),
             lastFourWeeksCanvas: first(text('Last four weeks')),
             detailedBreakdownButton: first(text('Detailed breakdown')),
@@ -96,9 +100,12 @@ export class BetInfluencerModal extends BetslipPage {
     }
     async gotoDetailSectionBetInfluencerModal() {
         await this.toggleHambergerMenu();
-        await this.page.waitForTimeout(50000);
-        await this.page.getByText('Bet Influencer').first().click();
-        await this.page.getByText('Bet Influencer').first().click();
+        // Was: a 50s dead wait followed by clicking the ambiguous, unscoped "Bet Influencer" text
+        // TWICE — confirmed live this occasionally lands on the wrong sidebar section entirely
+        // (observed: "Bonus Summary") rather than opening Bet Influencer, since a fresh getByText()
+        // query on the second click can resolve differently once the page has already navigated.
+        // The sidebar item has a real, unambiguous id — click it once instead.
+        await this.page.locator('[id="Bet Influencer-hamburger-menu-btn"]').click();
         await this.page.locator('#my-account-main').waitFor({ state: 'visible', timeout: 10000 });
         await this.clickDetailButton();
     }

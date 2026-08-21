@@ -32,6 +32,10 @@ export async function storeAllBookingCode(BetInfluencerPage: import('../pages/Be
         );
         if (currentPage === 1) {
             await BetInfluencerPage.loc.summaryButton.click();
+            // The summary->detail toggle re-renders the panel; clicking immediately can hit the
+            // "details" element mid-transition and detach before the click completes (confirmed
+            // live). A brief settle avoids the race.
+            await BetInfluencerPage.page.waitForTimeout(1000);
             await BetInfluencerPage.clickDetailButton();
         }
 

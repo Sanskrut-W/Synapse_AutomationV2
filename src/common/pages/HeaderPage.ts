@@ -3,6 +3,7 @@ import { HomePage } from './HomePage';
 import { SafeActions } from '../actions/SafeActions';
 import { css, role, text, xpath, first, at } from '../locators/sel';
 import { highlightElementBorder, highlightElements } from '../flows/HighlightElements';
+import { activeRegion } from '../config/oddsApiUrl';
 
 /**
  * A handful of registry keys in the old repo's Excel sheet were never actually wired into the
@@ -204,21 +205,22 @@ export class HeaderPage extends HomePage {
         await highlightElementBorder(this.loc.depositFund);
         await highlightElementBorder(this.loc.withdrawFund);
         await highlightElementBorder(this.loc.myBets);
-        await highlightElementBorder(this.loc.MyCasinoBigWin);
         await highlightElementBorder(this.loc.bonusSummary);
         await highlightElementBorder(this.loc.transactionsHistory);
-
+        await highlightElementBorder(this.loc.responsibleGaming);
+        if (activeRegion() !== 'GH') {
+            await highlightElementBorder(this.loc.documentVerification);
+        }
+        await highlightElementBorder(this.loc.MyCasinoBigWin);
         await this.loc.promoVouchers.scrollIntoViewIfNeeded();
         // await highlightElementBorder(this.loc.myCoupons);
         await highlightElementBorder(this.loc.betInfluencer);
         await highlightElementBorder(this.loc.promoVouchers);
         // await highlightElementBorder(this.loc.updateDetails);
-        await highlightElementBorder(this.loc.responsibleGaming);
-
-        await this.loc.logOut.scrollIntoViewIfNeeded();
-        await highlightElementBorder(this.loc.documentVerification);
-        await highlightElementBorder(this.loc.betwayBenefits);
         await highlightElementBorder(this.loc.betwayRewards);
+        await this.loc.logOut.scrollIntoViewIfNeeded();
+        // Confirmed live: GH's My Account panel has no "Document Verification" option at all.
+        // await highlightElementBorder(this.loc.betwayBenefits);
         // await highlightElementBorder(this.loc.changePassword);
         await highlightElementBorder(this.loc.logOut);
     }

@@ -76,13 +76,13 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
         //     await ScreenshotHelper(howTo.page, screenshotDir, 'T38.png', testInfo);
         // });
         test('T39-Verify that User should able to click on "How to Bet SMS" on the How To page', async ({ howTo }, testInfo) => {
-            // Confirmed live: TZ's How-To page has no "How To Bet SMS" section at all (0 matches).
-            test.skip(activeRegion() === 'TZ', 'TZ has no "How To Bet SMS" section on its How-To page');
+            // Confirmed live: neither TZ's nor GH's How-To page has a "How To Bet SMS" tab (0 matches).
+            test.skip(['TZ', 'GH'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T39-b.png', testInfo);
         });
         test('T40-Verify that User should able to click on any option available on "How to SMS" section', async ({ howTo }, testInfo) => {
-            test.skip(activeRegion() === 'TZ', 'TZ has no "How To Bet SMS" section on its How-To page');
+            test.skip(['TZ', 'GH'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T40.png', testInfo);
         });
@@ -93,8 +93,10 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
 
         test('T43-Verify that User should able to click on "How to Betgames" on the How To page', async ({ howTo }, testInfo) => {
             // Confirmed live: TZ doesn't offer Betgames at all (also absent from its main nav and
-            // My Bets category dropdown) — no "How To Betgames" section exists.
-            test.skip(activeRegion() === 'TZ', 'TZ does not offer Betgames; no "How To Betgames" section exists');
+            // My Bets category dropdown) — no "How To Betgames" section exists. GH does offer
+            // Betgames as a product, but its How-To page simply has no dedicated tab for it (0
+            // matches on the real 8-tab list: Bet/Cash-out/Register/Reset Password/Jackpots/Withdraw/Casino/Deposit).
+            test.skip(['TZ', 'GH'].includes(activeRegion()), 'No "How To Betgames" section on this region\'s How-To page');
             await howTo.clickHowToBetgames();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T43.png', testInfo);
         });
@@ -110,8 +112,11 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T49-Verify that User should able to click on "How to Reset Password" on the How To page', async ({ howTo }, testInfo) => {
-            // Confirmed live: TZ's How-To page has no "How to reset your password" section (0 matches).
-            test.skip(activeRegion() === 'TZ', 'TZ has no "How to reset your password" section on its How-To page');
+            // Previously skipped for TZ on the assumption this section didn't exist — that was a
+            // false negative: TZ/GH's real text is "How To Reset Password" while ZA's is "How to
+            // reset your password" (both genuinely exist, just worded differently — see the
+            // howTo.howToResetPassword overrides in regions/TZ and regions/GH locators.ts). The
+            // section itself exists on all three, so no skip is needed here.
             await howTo.clickHowToResetPassword();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T49.png', testInfo);
         });

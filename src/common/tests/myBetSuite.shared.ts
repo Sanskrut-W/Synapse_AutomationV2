@@ -1,6 +1,7 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { activeRegion } from '../config/oddsApiUrl';
+import { OddsSelectionAbove } from '../flows/OddSelection';
 
 export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('My Bets Page Functionality', () => {
@@ -15,7 +16,18 @@ export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
         test.describe('Open Bets Section', () => {
 
             // Clicks "My Bets" and "Open Bets" tab before each test in this group
-            test.beforeEach(async ({ myBetsPage }) => {
+            test.beforeEach(async ({ myBetsPage, page }) => {
+                if (activeRegion() === 'GH') {
+                    // Confirmed live: GH's test account currently has zero open bets ("There are no
+                    // available bets for this account"), so Detail View/Share have nothing real to
+                    // act on. Place one here rather than skip those checks outright.
+                    await OddsSelectionAbove(2, 1, page);
+                    await myBetsPage.placeBet();
+                    // The "Bet Confirmation" success modal has its own "My Bets" button, which
+                    // collides with the generic myBetsButton locator (text('My Bets')) — dismiss it
+                    // first so clickMyBets() unambiguously targets the header nav link.
+                    try { await page.getByText('Continue betting', { exact: true }).click({ timeout: 5000 }); } catch { /* modal may not appear */ }
+                }
                 await myBetsPage.clickMyBets();
                 await myBetsPage.clickOpenBetsTab();
             });

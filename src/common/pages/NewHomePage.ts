@@ -25,6 +25,22 @@ const NAV_ITEMS_BY_REGION: Record<string, string[]> = {
         'home', 'sport', 'live', 'aviator', 'casino', 'crash',
         'slots', 'quick games', 'live casino', 'lucky numbers', 'esports', 'promotions',
     ],
+    GH: [
+        // Confirmed live: GH has no Lucky Numbers/Horse Racing/Soccer Tote nav items at all.
+        'home', 'sport', 'live', 'aviator', 'casino', 'crash',
+        'slots', 'quick games', 'live casino', 'esports', 'promotions',
+    ],
+    MZ: [
+        // Confirmed live: MZ has an entirely different product set from ZA — no Casino/Slots/Crash/
+        // Live Casino/Quick Games at all, but has Instant Games/Betgames/Virtuals instead.
+        'home', 'sport', 'live', 'aviator', 'instant games',
+        'lucky numbers', 'betgames', 'esports', 'virtuals', 'promotions',
+    ],
+    NG: [
+        // Confirmed live: NG has Lucky Numbers (unlike GH) but no Horse Racing/Soccer Tote (unlike ZA).
+        'home', 'sport', 'live', 'aviator', 'casino', 'slots', 'crash',
+        'quick games', 'live casino', 'lucky numbers', 'esports', 'promotions',
+    ],
 };
 
 /**

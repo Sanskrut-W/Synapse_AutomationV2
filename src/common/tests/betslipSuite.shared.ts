@@ -1,6 +1,14 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { OddsSelectionAbove } from '../flows/OddSelection';
+import { activeRegion } from '../config/oddsApiUrl';
+
+// TZ/GH's Win Boost tiers need 3 legs to reach the first real tier (3%, tooltip "Win Boost 3%. 1
+// more for 5%") — 2 legs isn't enough to trigger any Win Boost on those regions. ZA's own tiers
+// start at 2 legs (2%, tooltip "Win Boost 2%. 1 more for 3%"), confirmed already working there.
+function winBoostLegs(): number {
+    return ['TZ', 'GH'].includes(activeRegion()) ? 3 : 2;
+}
 
 export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('Betslip Module - ZA', () => {
@@ -198,7 +206,7 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T24-Multi- Verify "Win boost" amount calculation on betslip.', async ({ betslipPage, page }, testInfo) => {
-            await OddsSelectionAbove(2, 2, page);
+            await OddsSelectionAbove(winBoostLegs(), 2, page);
             await betslipPage.verifyWinBoostCalculation();
             await ScreenshotHelper(page, screenshotDir, 'T24-betslip-Win-boost-amount-calculation-multi.png', testInfo);
         });
@@ -217,13 +225,13 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         // });
 
         test('T26-Multi-Verify Win Boost tool tip', async ({ betslipPage, page }, testInfo) => {
-            await OddsSelectionAbove(2, 2, page);
+            await OddsSelectionAbove(winBoostLegs(), 2, page);
             await betslipPage.verifyWinBoostToolTip();
             await ScreenshotHelper(page, screenshotDir, 'T26-betslip-Win-boost-tool-tip-multi.png', testInfo);
         });
 
         test('T27-Multi-Verify Win Boost pop up window', async ({ betslipPage, page }, testInfo) => {
-            await OddsSelectionAbove(2, 1.21, page);
+            await OddsSelectionAbove(winBoostLegs(), 1.21, page);
             await betslipPage.verifyWinBoostInfoIcon();
             await betslipPage.clickWinBoostInfoIcon();
             await page.waitForTimeout(2000);

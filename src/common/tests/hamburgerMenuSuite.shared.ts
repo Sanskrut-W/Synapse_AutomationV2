@@ -101,6 +101,8 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             });
 
             test('35-Verify Document Verification option functionality', async ({ hamburgerMenuPage }, testInfo) => {
+                // Confirmed live: GH's My Account panel has no "Document Verification" option at all.
+                test.skip(activeRegion() === 'GH', 'GH has no "Document Verification" option in My Account');
                 await hamburgerMenuPage.verifyAndClickDocumentVerification();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'DocVerification.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();

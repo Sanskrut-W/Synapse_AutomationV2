@@ -11,6 +11,9 @@ export class HowToPage extends HomePage {
         const inherited = this.loc;
         this.loc = { ...inherited, ...this.build('howTo', {
             howToBet: first(text(/How To Bet/i)),
+            // ZA's real page text is "How to reset your password" (confirmed — do not "fix" this
+            // to match TZ/GH's differently-worded "How To Reset Password" without a region
+            // override; the two regions genuinely say different things).
             howToResetPassword: first(text(/How to reset your password/i)),
             howToDeposit: first(text(/How To Deposit/i)),
             howToRegister: first(text(/How To Register/i)),

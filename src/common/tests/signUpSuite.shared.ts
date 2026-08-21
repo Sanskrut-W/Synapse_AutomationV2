@@ -1,5 +1,6 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
+import { activeRegion } from '../config/oddsApiUrl';
 
 function setupSignupTestSuite(_name: string) {
     // no-op
@@ -30,6 +31,14 @@ export function runSignUpSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T5-Register Button (Step 2 Entry)', async ({ signupPage }, testInfo) => {
+            if (activeRegion() === 'GH') {
+                // GH's "Step 2" is a mandatory OTP/SMS verification screen, not the ID/Passport step
+                // ZA has — there is no "Register" button here at all. Confirm the OTP screen was
+                // reached and stop; there's no way to read the real SMS code sent to the test number.
+                await signupPage.verifyOtpScreenReached();
+                await ScreenshotHelper(signupPage.page, screenshotDir, 'T5-signup-step2', testInfo);
+                return;
+            }
             // This test is re-purposed from the original T5 to just check Step 2 visibility
             // await expect(signupPage.getRegisterButton()).toBeVisible();
             await signupPage.highlightRegisterButton();
@@ -38,6 +47,12 @@ export function runSignUpSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T7-Register Button (Step 2 Full)', async ({ signupPage, testData }, testInfo) => {
+            if (activeRegion() === 'GH') {
+                // Same OTP blocker as T5 — GH has no ID field or Register button to fill/click here.
+                await signupPage.verifyOtpScreenReached();
+                await ScreenshotHelper(signupPage.page, screenshotDir, 'T7-signup', testInfo);
+                return;
+            }
             await signupPage.agreeToAll();
             await signupPage.fillIdNumber(testData.idValidation.miscID);
             // await expect(signupPage.getRegisterButton()).toBeVisible();

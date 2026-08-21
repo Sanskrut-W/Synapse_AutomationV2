@@ -3,6 +3,7 @@ import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
 import { css, role, text, first } from '../locators/sel';
 import { highlightElements } from '../flows/HighlightElements';
+import { activeRegion } from '../config/oddsApiUrl';
 
 export class MyBetsPage extends BasePage {
     constructor(page: Page, safeActions: SafeActions) {
@@ -70,6 +71,31 @@ export class MyBetsPage extends BasePage {
     async selectCategory(categoryName: 'Betgames' | 'Betway Jackpots' | 'Jackpots' | 'Tote' | 'Sports') {
         const currentDropdown = this.loc.categoryDropdown;
 
+        if (activeRegion() === 'GH') {
+            // Confirmed live: GH's dropdown has only 3 options — Sports, Betgames, Betway Jackpots
+            // — no Lucky Numbers or Tote at all, so the ZA-style 5-option cascade (which clicks
+            // through Lucky Numbers/Tote as intermediate "reopen" anchors) doesn't apply here.
+            switch (categoryName) {
+                case 'Betgames':
+                    await currentDropdown.click();
+                    await this.loc.betgamesOption.click();
+                    break;
+                case 'Betway Jackpots':
+                    await this.loc.betgamesOption.click(); // Betgames is the current label — click to reopen
+                    await this.loc.jackpotsOption.click();
+                    break;
+                case 'Sports':
+                    await this.loc.jackpotsOption.click(); // Betway Jackpots is the current label — click to reopen
+                    await this.loc.categoryDropdown.click();
+                    break;
+                default:
+                    // 'Jackpots'/'Tote' don't apply as distinct GH categories.
+                    break;
+            }
+            await this.page.waitForTimeout(1000);
+            return;
+        }
+
         switch (categoryName) {
             case 'Betgames':
                 await currentDropdown.click();
@@ -88,7 +114,11 @@ export class MyBetsPage extends BasePage {
             //     await this.loc.toteOption.click();
             //     break;
             case 'Sports':
-                await this.loc.toteOption.click(); // Click previous to open
+                // Pre-existing bug: this assumed "Tote" was the current label, but 'Tote' is never
+                // actually selected in the active test flow (its case is commented out above) — the
+                // real preceding selection is "Lucky Numbers" (from the 'Betway Jackpots' case),
+                // confirmed live via the timeout this caused waiting for "Tote" text that isn't shown.
+                await this.loc.luckyNumbersOption.click(); // Click previous to open
                 await this.loc.categoryDropdown.click(); // 'categoryDropdown' is 'Sports'
                 break;
         }

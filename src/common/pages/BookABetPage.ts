@@ -29,7 +29,11 @@ export class BookABetPage extends BasePage {
             singleBetSlip: css('#betslip-single-tab'),
             betNowButton: first(css('#betslip-strike-btn')),
             myBetsButton: first(role('button', { name: 'My Bets' })),
-            transactionHistoryButton: css('#transaction-history-account-nav'),
+            // #transaction-history-account-nav never matched anything on any region, live-confirmed
+            // — the only real "transaction-history" ids on the My Bets panel are the pagination
+            // arrows (-prev/-next). "Transaction History" is a real sidebar link on the same
+            // account panel navigateToMyBets() already opens.
+            transactionHistoryButton: role('link', { name: 'Transaction History' }),
             paginationNextButton: first(xpath("//div[normalize-space()='2']")),
             infoButton: css("//div[@class='md:relative']//*[name()='svg']"),
             whatsAppButton: css('a[href*="whatsapp.com"]'),
@@ -245,6 +249,9 @@ export class BookABetPage extends BasePage {
     }
 
     async navigateToTransactionHistory() {
+        // navigateToMyBets() already leaves the account panel open, and "Transaction History" is
+        // one of that same panel's sidebar links — no need to open the hamburger menu (its button
+        // sits behind this panel's backdrop, which was intercepting the click).
         await this.loc.transactionHistoryButton.click();
         await this.page.waitForTimeout(1000);
     }

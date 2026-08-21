@@ -30,6 +30,11 @@ export const tzOverrides: RegionOverrides = {
         // Confirmed live: TZ's Casino hero CTA links to /lobby/casino/all, not ZA's /lobby/casino-games.
         heroCasinoCta: (root) => root.locator('main a[href="/lobby/casino/all"]').filter({ hasText: 'Casino' }).first(),
     },
+    howTo: {
+        // Confirmed live: TZ's How-To page says "How To Reset Password" — ZA's own real text is
+        // "How to reset your password", genuinely different wording, not a stale locator.
+        howToResetPassword: first(text(/How To Reset Password/i)),
+    },
     betslip: {
         // TZ's Win Boost percentage and currency differ from ZA's (source: the real BetslipPage
         // Excel sheet's region-suffixed rows — winBoostToolTipTZ/winBoostValueTZ — which were never
@@ -37,5 +42,11 @@ export const tzOverrides: RegionOverrides = {
         // against ZA's values).
         winBoostToolTip: text('Win Boost 3%. 1 more for 5% (Min odds 1.2)'),
         winBoostValue: text('Win Boost (3%): TSh'),
+        // Same base-locator gap as the tooltip/value above — this one was hardcoded to ZA's
+        // 2%/3% text too, so it never matched TZ's real 3%/5% container.
+        winBoostInfoIcon: (root) => root
+            .locator('div', { hasText: /^Win Boost 3%\. 1 more for 5% \(Min odds 1\.2\)Bet Saver not active$/ })
+            .getByRole('img')
+            .nth(1),
     },
 };

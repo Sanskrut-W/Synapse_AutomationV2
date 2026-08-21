@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, at } from '../locators/sel';
+import { css, role, at, first } from '../locators/sel';
 import { highlightElements } from '../flows/HighlightElements';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 
@@ -34,11 +34,16 @@ export class TransactionHistoryPage extends BasePage {
             datePicker: at(at(css('#date'), 0), 1),
             dateDialog: role('dialog', { name: 'Choose Date' }),
 
-            transactionIDButton: css('span.underline.cursor-pointer'),
+            // Neither was scoped to a single row — with only 0-1 transactions on an account these
+            // matched at most one element, but once the account accumulates real history (25
+            // transactions, confirmed live) both hit a strict-mode violation. Both methods that use
+            // these operate on the first/most-recent transaction, so .first() matches real intent.
+            transactionIDButton: first(css('span.underline.cursor-pointer')),
             transactionIdInput: (root) => root.getByPlaceholder('Transaction ID'),
-            transactionDetailView: css('svg.w-6.h-6.cursor-pointer.fill-dark-600'),
+            transactionDetailView: first(css('svg.w-6.h-6.cursor-pointer.fill-dark-600')),
             detailViewBackButton: role('button', { name: 'Back' }),
-            betslipBackButton: css('#detail-view-back-btn'),
+            // Confirmed live: this id is duplicated on 2 structurally-identical elements.
+            betslipBackButton: first(css('#detail-view-back-btn')),
 
             exportBtn: css('#transaction-history-export-btn'),
 

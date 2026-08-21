@@ -1,8 +1,9 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, text, label, first, at } from '../locators/sel';
+import { css, role, text, label, first, at, or } from '../locators/sel';
 import { highlightElements } from '../flows/HighlightElements';
+import { activeRegion } from '../config/oddsApiUrl';
 
 export class SignUpPage extends BasePage {
     constructor(page: Page, safeActions: SafeActions) {
@@ -16,7 +17,8 @@ export class SignUpPage extends BasePage {
             lastNameInput: first(role('textbox', { name: 'Surname' })),
             loginButton: first(role('button', { name: 'Login' })),
             signUpButton: first(role('button', { name: 'Sign Up' })),
-            nextButton: first(role('button', { name: 'Next' })),
+            // GH's Step-1 form has no "Next" button at all — its equivalent is labeled "Continue".
+            nextButton: first(or(role('button', { name: 'Next' }), role('button', { name: 'Continue' }))),
             previousButton: first(role('button', { name: 'Previous' })),
             registerButton: first(role('button', { name: 'Register' })),
             hamburgerMenu: first(css('#header-hamburger-btn')),
@@ -31,6 +33,14 @@ export class SignUpPage extends BasePage {
             saIdInput: first(role('textbox', { name: 'South African ID' })),
             passportInput: first(role('textbox', { name: 'Passport' })),
             dobDropdown: first(role('combobox', { name: 'Date of Birth' })),
+            // GH-only fields: GH's Step-1 form has no Name/Email at all, but does require these
+            // (confirmed live — ZA's Step 1 has neither ConfirmPassword nor a DOB gate).
+            confirmPasswordInput: first(css('input[data-id="ConfirmPassword"]')),
+            ageCheckbox: first(css('input[data-id="ConfirmAge"]')),
+            // GH's registration continues to a mandatory OTP/SMS verification screen after Step 1 —
+            // there is no real way to read the SMS code from a test, so this locator is only ever
+            // used to confirm the OTP screen was reached, never to fill or submit a code.
+            otpInput: first(css('#reg-content input[type="tel"]')),
             signupCodeToggle: first(text('I have a signup code')),
             voucherCodeField: first(role('textbox', { name: 'VoucherCode' })),
             referralCodeField: first(role('textbox', { name: 'ReferralCode' })),
@@ -111,6 +121,17 @@ export class SignUpPage extends BasePage {
     async fillBasicInfo(mobile: string, password: string, firstName: string, lastName: string, email: string) {
         await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
         await this.safeActions.safeFill('passwordInput', this.loc.passwordInput, password);
+
+        if (activeRegion() === 'GH') {
+            // GH's Step-1 form has no Name/Email fields at all — instead it requires Confirm
+            // Password, a mandatory Date of Birth (calendar widget), and an age-confirmation
+            // checkbox before its "Continue" button will proceed.
+            await this.safeActions.safeFill('confirmPasswordInput', this.loc.confirmPasswordInput, password);
+            await this.selectDateOfBirth();
+            await this.loc.ageCheckbox.check();
+            return;
+        }
+
         await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
         await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
         await this.safeActions.safeFill('emailInput', this.loc.emailInput, email);
@@ -207,10 +228,23 @@ export class SignUpPage extends BasePage {
     // 5. Date of Birth Methods
     // ------------------------------------------------------------------
 
+    /** Opens the Date of Birth calendar widget and picks a date safely over 18 years old.
+     *  The picker defaults to viewing the month ~18 years ago (days past the exact 18-year cutoff
+     *  are disabled) — navigating back 2 more months guarantees every day in the visible month is
+     *  enabled, regardless of what "today" is when the test runs. */
     async selectDateOfBirth() {
         await this.loc.dobDropdown.click();
         await this.page.waitForTimeout(500);
-        // Date selection logic can be added here if needed
+        const prevMonth = this.page.getByRole('button', { name: 'Previous Month' });
+        for (let i = 0; i < 2; i++) {
+            await prevMonth.click();
+            await this.page.waitForTimeout(200);
+        }
+        await this.page.locator('td:not(.p-datepicker-other-month) span', { hasText: /^15$/ }).first().click();
+        await this.page.waitForTimeout(300);
+        // Some calendar configurations require an explicit confirm click; harmless no-op if the
+        // picker already closed itself on day selection.
+        try { await this.page.getByText('Ok', { exact: true }).click({ timeout: 2000 }); } catch { /* auto-confirmed */ }
     }
 
     // ------------------------------------------------------------------
@@ -328,6 +362,12 @@ export class SignUpPage extends BasePage {
     }
     async highlightRegisterButton() {
         await highlightElements(this.loc.registerButton);
+    }
+    /** GH-only: confirms the OTP verification screen was reached. Does not attempt to fill or
+     *  submit a code — there is no way to read the real SMS sent to the test number. */
+    async verifyOtpScreenReached() {
+        await this.loc.otpInput.waitFor({ state: 'visible', timeout: 10000 });
+        await highlightElements(this.loc.otpInput);
     }
     async highlightSAIdInput() {
         await highlightElements(this.loc.saIdInput);
