@@ -34,7 +34,10 @@ export default defineConfig({
     deviceScaleFactor: undefined,
 
     launchOptions: {
-      args: ['--start-maximized'],
+      // Chromium's native permission prompts (e.g. sites repeatedly asking to "access other apps
+      // and services on this device") sit above the page and can't be dismissed via page.locator()
+      // — auto-deny them at launch so they never block a headed run or intercept a screenshot.
+      args: ['--start-maximized', '--deny-permission-prompts'],
     },
 
     trace: 'on-first-retry',
@@ -52,7 +55,7 @@ export default defineConfig({
         viewport: null,
         deviceScaleFactor: undefined,
         launchOptions: {
-          args: ['--start-maximized'],
+          args: ['--start-maximized', '--deny-permission-prompts'],
         },
       },
     },

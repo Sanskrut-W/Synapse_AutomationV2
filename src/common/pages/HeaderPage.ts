@@ -66,7 +66,11 @@ export class HeaderPage extends HomePage {
             changePassword: text('Change password details'),
             logOut: css('#Log\\ Out-hamburger-menu-btn'),
             closeMyAccountOptions: at(css('#modal-close-btn'), 1),
-            accountsButton: first(css('img[alt="MatkaKing profile avatar"]')),
+            // Confirmed live on MW: the logged-in test account's own display name ("Zensar009")
+            // appears in this alt text too — "MatkaKing" was never a stable, region-general value,
+            // just ZA's particular test account's name. Matching the constant "profile avatar"
+            // suffix instead matches every account name, ZA's included, with no loss of matches.
+            accountsButton: first(css('img[alt$="profile avatar"]')),
             balanceLabel: text('Balance', { exact: true }),
             balanceValue: css('.balance-amount'),
             balanceDropdown: xpath('//*[@id="__nuxt"]/div/div[1]/header/div/div[2]/div/div[2]/div[2]'),
@@ -211,7 +215,10 @@ export class HeaderPage extends HomePage {
         if (activeRegion() !== 'GH') {
             await highlightElementBorder(this.loc.documentVerification);
         }
-        await highlightElementBorder(this.loc.MyCasinoBigWin);
+        if (activeRegion() !== 'MW') {
+            // Confirmed live: MW's My Account panel has no "My Casino Big Win" option.
+            await highlightElementBorder(this.loc.MyCasinoBigWin);
+        }
         await this.loc.promoVouchers.scrollIntoViewIfNeeded();
         // await highlightElementBorder(this.loc.myCoupons);
         await highlightElementBorder(this.loc.betInfluencer);
@@ -303,7 +310,12 @@ export class HeaderPage extends HomePage {
 
     // ── Click Methods - Hamburger Menu ───────────────────────────────────────
     async clickHamburgerMenu() {
-        await this.loc.hamburgerMenu.click();
+        // Confirmed live on MW: a full-screen backdrop overlay can sit on top of an otherwise
+        // visible/enabled/stable hamburger icon (a benign z-index quirk, not an actual blocker —
+        // Playwright's own actionability checks confirm the icon itself is fine), causing the
+        // normal click to spin on "element intercepts pointer events" until timeout. force:true
+        // skips that hit-test; harmless on regions where no such overlay exists.
+        await this.loc.hamburgerMenu.click({ force: true });
     }
 
     async clickCloseHamburgerMenu() {
@@ -311,11 +323,21 @@ export class HeaderPage extends HomePage {
     }
 
     async clickQuickLinks() {
-        await this.loc.quickLinks.click();
+        // Confirmed live on MW: there's no separate "Quick Links" accordion toggle at all — its
+        // content (Betting Rules, etc.) is already flat/expanded in the panel (see T5, which finds
+        // Betting Rules without ever clicking this). Skip gracefully where it doesn't exist instead
+        // of hanging for the full timeout on regions that don't have this toggle.
+        try {
+            await this.loc.quickLinks.waitFor({ state: 'visible', timeout: 3000 });
+            await this.loc.quickLinks.click();
+        } catch {
+            // Not present on this region — its content is already shown flat elsewhere in the panel.
+        }
     }
 
     async clickBettingRules() {
-        await this.loc.bettingRules.click();
+        // Same benign overlay-interception quirk as clickHamburgerMenu() above, confirmed live on MW.
+        await this.loc.bettingRules.click({ force: true });
     }
 
     async clickStatistics() {

@@ -99,7 +99,8 @@ export class LoginPage extends HomePage {
     // goto() is inherited from BasePage (via HomePage)
 
     async gotoAviatorPage() {
-        await this.page.goto('https://www.betway.co.za/lobby/casino-games/game/aviator');
+        // Relative path — resolves against the active region's baseURL, not a hardcoded ZA domain.
+        await this.page.goto('/lobby/casino-games/game/aviator');
         await this.page.waitForLoadState('domcontentloaded');
     }
 

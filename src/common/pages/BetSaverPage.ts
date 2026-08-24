@@ -144,9 +144,9 @@ export class BetSaverPage extends BasePage {
     }
 
     async navigateToMyBets() {
-        // Was hardcoded to https://new.betway.co.za/... — silently ran every non-ZA region's
-        // BetSaver "navigate to My Bets" step against the ZA site instead of the active region's
-        // own baseURL. Relative paths resolve against playwright.<REGION>.config.ts's baseURL.
+        // Relative path — resolves against the active region's baseURL (playwright.<REGION>.config.ts).
+        // Was hardcoded to new.betway.co.za, a ZA-only domain, so every non-ZA region tried to
+        // navigate to a ZA subdomain that doesn't even resolve for their live site.
         await this.page.goto('/sport/soccer/upcoming?account=my-bets');
         await this.page.waitForLoadState('domcontentloaded');
     }
@@ -212,11 +212,25 @@ export class BetSaverPage extends BasePage {
     }
 
     // Active BetSaver: the BetSaver text SHOULD be shown in the bet's Detail View.
+    // Confirmed live: a bet placed moments earlier renders in the My Bets list right away, but this
+    // specific line only appears once the backend finishes attaching Bet Saver eligibility to that
+    // bet — a genuine settle delay, not a locator issue (the element resolves in the DOM the whole
+    // time, just hidden). Simply polling longer on the same page load doesn't help once the initial
+    // fetch already missed it; reloading forces a fresh fetch that picks up the now-settled data.
     async verifyBetSaverTextVisibleInDetail() {
-        await expect(
-            this.loc.betSaverTextInDetail,
-            'BetSaver text should be visible in Detail View'
-        ).toBeVisible({ timeout: 10000 });
+        try {
+            await expect(
+                this.loc.betSaverTextInDetail,
+                'BetSaver text should be visible in Detail View'
+            ).toBeVisible({ timeout: 15000 });
+        } catch {
+            await this.page.reload({ waitUntil: 'domcontentloaded' });
+            await this.clickDetailViewButton();
+            await expect(
+                this.loc.betSaverTextInDetail,
+                'BetSaver text should be visible in Detail View (after reload retry)'
+            ).toBeVisible({ timeout: 15000 });
+        }
         await highlightElements(this.loc.betSaverTextInDetail);
     }
 

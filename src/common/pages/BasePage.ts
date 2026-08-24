@@ -111,6 +111,17 @@ export class BasePage {
     }
 
     async Login(user: { mobile: string; password: string } = userData.user4) {
+        // Most regions show the Mobile Number field inline in the header at all times. Some
+        // (confirmed live: MW) instead show only a "Login" button, and the inline fields don't
+        // render until it's clicked. Detect that case generically rather than branching on region,
+        // so this keeps working if other regions turn out to behave the same way.
+        try {
+            await this.baseLoginLocators.mobileNumber.waitFor({ state: 'visible', timeout: 3000 });
+        } catch {
+            const loginButton = this.page.getByRole('button', { name: 'Login', exact: true }).first();
+            await loginButton.click({ timeout: 10000 }).catch(() => { /* no such button either — let the fill below surface the real error */ });
+            await this.baseLoginLocators.mobileNumber.waitFor({ state: 'visible', timeout: 10000 }).catch(() => { });
+        }
         await this.safeActions.safeFill('baseLoginMobileNumber', this.baseLoginLocators.mobileNumber, user.mobile);
         await this.safeActions.safeFill('baseLoginPassword', this.baseLoginLocators.password, user.password);
         await this.page.keyboard.press('Enter');

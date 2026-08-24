@@ -1,5 +1,6 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
+import { activeRegion } from '../config/oddsApiUrl';
 
 export function runHeaderSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('Header Module Tests', () => {
@@ -47,6 +48,9 @@ export function runHeaderSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('26-Verify that Accounts button is visible and clickable on the home page of Betway application', async ({ headerPage }, testInfo) => {
+            // Confirmed live: at this suite's viewport, MW's header has no profile-avatar icon at
+            // all (account access goes through the hamburger menu instead) — not a locator mismatch.
+            test.skip(activeRegion() === 'MW', "MW's header has no profile avatar icon at this viewport");
             await headerPage.Login();
             await headerPage.page.waitForTimeout(3000);
             await headerPage.verifyAndClickAccountsButton();

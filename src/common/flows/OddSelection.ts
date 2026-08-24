@@ -9,8 +9,17 @@ import { API_URLS, activeRegion, OddsApiConfig } from '../config/oddsApiUrl';
  * against ZA's proven-correct behavior (the 5 real functions in the old ZA commonflows/OddSelection.ts).
  */
 
-async function waitForOddsApi(page: Page, apiUrl: string) {
-    const response = await page.waitForResponse((r) => r.url().startsWith(apiUrl) && r.status() === 200);
+/**
+ * Registers the response listener BEFORE running `trigger` (the reload/click that actually causes
+ * the odds-API request), not after. Every call site here used to reload/click FIRST and only then
+ * call waitForResponse — a real, confirmed race: if the site answers fast enough, the response
+ * already arrives before the listener attaches, and waitForResponse then hangs for its full
+ * timeout waiting for a response that already happened. This was surfacing consistently on GH.
+ */
+async function waitForOddsApi(page: Page, apiUrl: string, trigger: () => Promise<unknown>) {
+    const responsePromise = page.waitForResponse((r) => r.url().startsWith(apiUrl) && r.status() === 200);
+    await trigger();
+    const response = await responsePromise;
     return response.json();
 }
 
@@ -33,8 +42,7 @@ function requireUrl(field: keyof OddsApiConfig): string {
 
 export async function OddsSelection(numberOflegs: number, page: Page) {
     const soccerUpcoming = requireUrl('soccerUpcoming');
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    const data = await waitForOddsApi(page, soccerUpcoming);
+    const data = await waitForOddsApi(page, soccerUpcoming, () => page.reload({ waitUntil: 'domcontentloaded' }));
     for (let i = 0; i < numberOflegs; i++) {
         const eventId = data.events?.[i]?.eventId;
         if (!eventId) continue;
@@ -47,8 +55,7 @@ export async function OddsSelection(numberOflegs: number, page: Page) {
 
 export async function placeBetWithIndex(legNum: number, page: Page) {
     const soccerHighlights = requireUrl('soccerHighlights');
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    const data = await waitForOddsApi(page, soccerHighlights);
+    const data = await waitForOddsApi(page, soccerHighlights, () => page.reload({ waitUntil: 'domcontentloaded' }));
     for (let i = legNum; i < 10; i++) {
         const eventId = data.events?.[i]?.eventId;
         if (!eventId) continue;
@@ -63,8 +70,7 @@ export async function placeBetWithIndex(legNum: number, page: Page) {
 
 export async function EsportsOddsSelection(numberOflegs: number, page: Page) {
     const esports = requireUrl('esports');
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    const data = await waitForOddsApi(page, esports);
+    const data = await waitForOddsApi(page, esports, () => page.reload({ waitUntil: 'domcontentloaded' }));
     for (let i = 1; i < numberOflegs; i++) {
         const eventId = data.events?.[i]?.eventId;
         if (!eventId) continue;
@@ -79,9 +85,10 @@ export async function EsportsOddsSelection(numberOflegs: number, page: Page) {
 
 export async function DrawNoBetOddsSelection(numberOflegs: number, page: Page) {
     const soccerHighlights = requireUrl('soccerHighlights');
-    await page.locator('#pv_id_3').click();
-    await page.getByText('Draw No Bet').last().click();
-    const data = await waitForOddsApi(page, soccerHighlights);
+    const data = await waitForOddsApi(page, soccerHighlights, async () => {
+        await page.locator('#pv_id_3').click();
+        await page.getByText('Draw No Bet').last().click();
+    });
     for (let i = 0; i < numberOflegs; i++) {
         const eventId = data.events?.[i]?.eventId;
         if (!eventId) continue;
@@ -96,9 +103,10 @@ export async function DrawNoBetOddsSelection(numberOflegs: number, page: Page) {
 
 export async function LiveOddsSelection(numberOfLegs: number, page: Page) {
     const liveTableTennis = requireUrl('liveTableTennis');
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.getByRole('img', { name: 'Table Tennis' }).click();
-    const data = await waitForOddsApi(page, liveTableTennis);
+    const data = await waitForOddsApi(page, liveTableTennis, async () => {
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.getByRole('img', { name: 'Table Tennis' }).click();
+    });
     for (let i = 0; i < numberOfLegs; i++) {
         const eventId = data.events?.[i]?.eventId;
         if (!eventId) continue;
@@ -113,16 +121,17 @@ export async function LiveOddsSelection(numberOfLegs: number, page: Page) {
 
 export async function OddsSelectionAbove(numberOflegs: number, minOdd: number, page: Page) {
     const soccerUpcoming = requireUrl('soccerUpcoming');
-    // stabilize page
-    await page.reload({ waitUntil: 'domcontentloaded' });
 
-    // close modal if present
-    try { await page.locator('#modal-close-btn').click({ timeout: 10000 }); } catch { /* not shown */ }
+    const data = await waitForOddsApi(page, soccerUpcoming, async () => {
+        // stabilize page
+        await page.reload({ waitUntil: 'domcontentloaded' });
 
-    // ensure Upcoming tab is active
-    await page.locator('#sports-tabs div').filter({ hasText: 'Upcoming' }).first().click();
+        // close modal if present
+        try { await page.locator('#modal-close-btn').click({ timeout: 10000 }); } catch { /* not shown */ }
 
-    const data = await waitForOddsApi(page, soccerUpcoming);
+        // ensure Upcoming tab is active
+        await page.locator('#sports-tabs div').filter({ hasText: 'Upcoming' }).first().click();
+    });
 
     let selected = 0;
     for (let i = 0; i < data.events?.length; i++) {

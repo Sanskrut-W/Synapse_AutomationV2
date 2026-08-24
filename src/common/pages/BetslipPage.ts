@@ -1,7 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { SportsPage } from './SportsPage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, text, at } from '../locators/sel';
+import { css, role, text, at, first } from '../locators/sel';
 import { highlightElementBorder, highlightElements } from '../flows/HighlightElements';
 import { loadRegionData } from '../config/regionData';
 
@@ -36,7 +36,12 @@ export class BetslipPage extends SportsPage {
             deleteIcon: css('#betslip-remove-all'),
             selectAllCheckbox: css('#betslip-select-all'),
             removeLegIcon: css('#remove-event-betslip'),
-            betAmountInput: css('#bet-amount-input'),
+            // Confirmed live on MW: multiple legs in the betslip each render an element sharing the
+            // same #bet-amount-input id (a markup duplicate-id issue, not per-leg fields), and the
+            // hidden duplicates aren't reliably last in DOM order, so first() alone could still grab
+            // a hidden one — Playwright's :visible pseudo-class picks the real, interactable one.
+            // Harmless where only one match exists.
+            betAmountInput: first(css('#bet-amount-input:visible')),
             loginBtnBetslip: css('#betslip-container'),
             betNowBtn: css('#betslip-strike-btn'),
             shareBtn: css('#betslip-share-btn'),

@@ -41,6 +41,11 @@ const NAV_ITEMS_BY_REGION: Record<string, string[]> = {
         'home', 'sport', 'live', 'aviator', 'casino', 'slots', 'crash',
         'quick games', 'live casino', 'lucky numbers', 'esports', 'promotions',
     ],
+    MW: [
+        // Confirmed live: MW's nav is the smallest of any region checked so far — no Aviator, no
+        // Casino/Slots/Crash/Live Casino/Quick Games, no Lucky Numbers/Horse Racing/Soccer Tote.
+        'home', 'sport', 'live', 'esports', 'promotions',
+    ],
 };
 
 /**

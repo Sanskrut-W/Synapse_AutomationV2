@@ -53,6 +53,8 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             });
 
             test('27-Verify My Casino Big Win option functionality', async ({ hamburgerMenuPage }, testInfo) => {
+                // Confirmed live: MW's My Account panel has no "My Casino Big Win" option at all.
+                test.skip(activeRegion() === 'MW', 'MW has no "My Casino Big Win" option in My Account');
                 await hamburgerMenuPage.verifyAndClickMyCasinoBigWin();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'CasinoBigWin.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -109,6 +111,8 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             });
 
             test('36-Verify Betway Benefits option functionality', async ({ hamburgerMenuPage }, testInfo) => {
+                // Confirmed live: MW's My Account panel has no "Betway Benefits" option at all.
+                test.skip(activeRegion() === 'MW', 'MW has no "Betway Benefits" option in My Account');
                 await hamburgerMenuPage.verifyAndClickBetwayBenefits();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'BetwayBenefits.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();

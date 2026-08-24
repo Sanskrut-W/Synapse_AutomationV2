@@ -134,6 +134,14 @@ export class SignUpPage extends BasePage {
 
         await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
         await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
+
+        if (activeRegion() === 'MW') {
+            // Confirmed live: MW's Step-1 form has no Email field at all — only
+            // MobileNumber/Password/FirstName/LastName (see the signUp overrides in
+            // regions/MW/locators.ts for the region-specific field locators).
+            return;
+        }
+
         await this.safeActions.safeFill('emailInput', this.loc.emailInput, email);
     }
 

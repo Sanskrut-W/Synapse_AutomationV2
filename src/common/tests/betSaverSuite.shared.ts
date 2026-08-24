@@ -1,10 +1,15 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
+import { activeRegion } from '../config/oddsApiUrl';
 
 export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('BetSaver Module Tests', () => {
 
         // T6-9 Betsaver Active in My Bets
         test('T6-9 - Betsaver Active in My Bets', async ({ betSaverPage }, testInfo) => {
+            // Confirmed live: MW has no Bet Saver promotion at all — checked up to 9 legs on the
+            // betslip with no "Bet Saver" text anywhere. The rest of this module's tests weren't
+            // reported as failing for MW, so left untouched here; worth a closer look given this.
+            test.skip(activeRegion() === 'MW', 'MW has no Bet Saver promotion at all');
             await betSaverPage.placeBetsaverActiveBetAndNavigateToMyBets(7);
             // T7 Detail View — BetSaver text SHOULD be visible
             await betSaverPage.clickDetailViewButton();

@@ -146,9 +146,16 @@ export class BookABetPage extends BasePage {
     }
 
     // T10/T11: Click Arrow Filter
+    // T4 calls this twice in a row to toggle ascending/descending — the Booking Codes panel opened
+    // by the first call has no "Sport Sport" nav link inside it (confirmed live on MW: the nav bar
+    // isn't rendered while that panel is open), so re-running the navigation on the second call
+    // would hang waiting for a link that isn't there. Only navigate in if not already on the panel.
     async clickArrowFilter() {
-        await this.loc.sportButton.click();
-        await this.clickBookingCode();
+        const alreadyOnPanel = await this.loc.arrowFilter.isVisible().catch(() => false);
+        if (!alreadyOnPanel) {
+            await this.loc.sportButton.click();
+            await this.clickBookingCode();
+        }
         await this.loc.arrowFilter.click();
         await this.page.waitForTimeout(1000);
     }
