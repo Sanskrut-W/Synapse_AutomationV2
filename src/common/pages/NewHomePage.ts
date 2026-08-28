@@ -46,6 +46,18 @@ const NAV_ITEMS_BY_REGION: Record<string, string[]> = {
         // Casino/Slots/Crash/Live Casino/Quick Games, no Lucky Numbers/Horse Racing/Soccer Tote.
         'home', 'sport', 'live', 'esports', 'promotions',
     ],
+    BW: [
+        // Confirmed live: BW has no Horse Racing/Soccer Tote (unlike ZA), otherwise matches ZA's
+        // set. Without this entry BW silently fell back to ZA's full 14-item list.
+        'home', 'sport', 'live', 'aviator', 'casino', 'crash',
+        'slots', 'live casino', 'quick games', 'lucky numbers', 'esports', 'promotions',
+    ],
+    ZM: [
+        // Confirmed live: ZM has the exact same nav item set as BW (no Horse Racing/Soccer Tote) —
+        // same gap, silently falling back to ZA's full 14-item list without this entry.
+        'home', 'sport', 'live', 'aviator', 'casino', 'crash',
+        'slots', 'live casino', 'quick games', 'lucky numbers', 'esports', 'promotions',
+    ],
 };
 
 /**
@@ -215,8 +227,14 @@ export class NewHomePage extends HeaderPage {
         await highlightElementBorder(this.nh.signUpButton);
     }
 
-    /** TC_BL_05: the homepage exposes an inline login form (mobile, password, forgot links, Login button). */
+    /** TC_BL_05: the homepage exposes an inline login form (mobile, password, forgot links, Login button).
+     *  Confirmed live on TZ: right after gotoHome() returns, the inline fields occasionally aren't
+     *  hydrated yet (count()===0 for all of them momentarily) — the same late-hydration race already
+     *  documented/handled in loginFromHeader() below, just never applied to this logged-out check.
+     *  An explicit wait with real headroom (vs. relying on toBeVisible()'s default 5s expect timeout)
+     *  makes this deterministic instead of racing the Vue header's hydration. */
     async verifyLoginFormPresent() {
+        await this.nh.inlineMobile.waitFor({ state: 'visible', timeout: 30000 });
         await expect(this.nh.inlineMobile).toBeVisible();
         await expect(this.nh.inlinePassword).toBeVisible();
         await expect(this.nh.forgotPassword).toBeVisible();

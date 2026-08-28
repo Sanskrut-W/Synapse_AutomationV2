@@ -1,7 +1,7 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, text, label, first, at, or } from '../locators/sel';
+import { css, role, text, label, first, last, at, or } from '../locators/sel';
 import { highlightElements } from '../flows/HighlightElements';
 import { activeRegion } from '../config/oddsApiUrl';
 
@@ -12,7 +12,25 @@ export class SignUpPage extends BasePage {
         // Handle relative locators, like in HomePage.ts
         this.loc = { ...this.loc, ...this.build('signUp', {
             mobileInput: first(role('textbox', { name: 'MobileNumber' })),
-            passwordInput: at(role('textbox', { name: 'Password' }), 1),
+            // The signup modal's own password field shares the exact same accessible name
+            // ("Enter Password") as the header's hidden inline-login password field, so both can
+            // match this role query at once — unlike mobileInput, whose modal wording ("MobileNumber",
+            // no space) is already unique. `.at(1)` (hardcoded "2nd match") assumed the header field
+            // is always present and always first; confirmed live on MZ that isn't reliable — the
+            // header field can drop out of the match set, shifting the modal's field to index 0 and
+            // making `.at(1)` resolve to nothing. The modal field is always the LAST match in DOM
+            // order regardless of whether the header field is counted, so `last()` is robust to both.
+            // Confirmed live on NG: a non-exact "Password" match ALSO catches the modal's own
+            // "ConfirmPassword" field (the substring "Password" appears inside "ConfirmPassword"
+            // too) — `exact: true` isn't the fix here, since ZA's real Password field's accessible
+            // name ISN'T an exact match for "Password" either (confirmed live: 0 matches with
+            // exact:true on ZA) and would regress every region that already works. Instead, exclude
+            // ConfirmPassword explicitly — a field that should never have been a candidate for this
+            // locator regardless of region — while keeping `last()`'s already-verified behavior.
+            passwordInput: (root) => root
+                .getByRole('textbox', { name: 'Password' })
+                .and(root.locator(':not([data-id="ConfirmPassword"])'))
+                .last(),
             firstNameInput: first(role('textbox', { name: 'First Name' })),
             lastNameInput: first(role('textbox', { name: 'Surname' })),
             loginButton: first(role('button', { name: 'Login' })),
@@ -37,6 +55,10 @@ export class SignUpPage extends BasePage {
             // (confirmed live — ZA's Step 1 has neither ConfirmPassword nor a DOB gate).
             confirmPasswordInput: first(css('input[data-id="ConfirmPassword"]')),
             ageCheckbox: first(css('input[data-id="ConfirmAge"]')),
+            // NG-only field: confirmed live (DOM dump of the real Sign Up modal) — NG's single-step
+            // form additionally requires picking a Territory (state/region) from a dropdown before
+            // Continue will submit. No other region's signup form has an equivalent field.
+            territoryDropdown: first(css('[data-id="Territory"]')),
             // GH's registration continues to a mandatory OTP/SMS verification screen after Step 1 —
             // there is no real way to read the SMS code from a test, so this locator is only ever
             // used to confirm the OTP screen was reached, never to fill or submit a code.
@@ -94,6 +116,12 @@ export class SignUpPage extends BasePage {
     async clickNext() {
         const nextButton = this.loc.nextButton;
         if (await nextButton.isVisible({ timeout: 2000 })) {
+            // NOTE: do NOT call closePromotionPopupIfVisible()/similar here — confirmed live that
+            // the Step-2 signup form's own close (X) button reuses the exact same #modal-close-btn
+            // id with no promo present, so an unscoped dismiss here closes the whole signup form
+            // instead of a promo (same trap already documented on closeInformativeInterstitialIfVisible
+            // in BasePage.ts). If a promo genuinely needs dismissing for this flow, it belongs right
+            // after opening the signup modal (before any fields are filled), not here.
             await nextButton.click();
             await this.page.waitForTimeout(1000);
         }
@@ -119,6 +147,14 @@ export class SignUpPage extends BasePage {
     // ------------------------------------------------------------------
 
     async fillBasicInfo(mobile: string, password: string, firstName: string, lastName: string, email: string) {
+        if (activeRegion() === 'NG') {
+            // Confirmed live: NG's signup backend rejects a mobile number with "Mobile Number is
+            // already in use" the moment it's been submitted once (even without completing OTP) —
+            // a fixed value from SignUpData.json inevitably collides across repeated runs. Generate
+            // a fresh, validly-formatted number (NG requires exactly 10 digits, confirmed live) per
+            // run instead of reusing the static test-data value for NG specifically.
+            mobile = '80' + String(Date.now()).slice(-8);
+        }
         await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
         await this.safeActions.safeFill('passwordInput', this.loc.passwordInput, password);
 
@@ -132,13 +168,58 @@ export class SignUpPage extends BasePage {
             return;
         }
 
+        if (activeRegion() === 'TZ') {
+            // Confirmed live (screenshot + full DOM dump of the Sign Up modal): TZ's real signup
+            // form is a THIRD, distinct variant from GH's and MW's fixes — it isn't a mobileInput
+            // label mismatch or a data-id-vs-role-name issue at all. TZ's form is a SINGLE STEP
+            // with no First Name/Last Name/Email fields and no Next/Continue button — just
+            // MobileNumber + Password + three consent checkboxes (data-id="AgreeToAll"/
+            // "ConfirmAge"/"StopCommunication") directly above one "Register" button
+            // (id="register-submit"). There is no "Step 2" to advance to at all.
+            // Before this branch existed, fillBasicInfo() fell through to the ZA-shaped code below
+            // and tried to fill firstNameInput/lastNameInput against fields that don't exist on
+            // TZ's page — each call burned SafeActions' full 3-attempt-retry + heuristic + AI
+            // self-heal budget (up to ~180s per field) before finally throwing, which is exactly
+            // the ~3-minute timeout T5/T7 were hitting in the shared beforeEach, before either
+            // test's own body ever ran.
+            return;
+        }
+
+        if (activeRegion() === 'NG') {
+            // Confirmed live (full DOM dump of the real Sign Up modal, #reg-content /
+            // form#partial-reg-form): NG's signup form is a FOURTH variant — a SINGLE STEP like
+            // TZ's, but built from GH's data-id fields plus one field GH doesn't have. Mobile
+            // Number / Password / ConfirmPassword / Date of Birth / a Territory dropdown /
+            // ConfirmAge checkbox all live on the one step, above a "Continue" submit button
+            // (no "Register" button, no "Next"/"Step 2" at all). "Continue" is already matched by
+            // the shared nextButton locator (its GH-derived Next-or-Continue fallback). Confirmed
+            // live: submitting this form (with a validly-formatted mobile number and the Coupons
+            // welcome-pack promo dismissed) reaches the exact same mandatory OTP/SMS verification
+            // screen as GH's flow.
+            // NG's Mobile Number field's accessible name is "Mobile Number" (WITH a space) — the
+            // shared mobileInput locator above expects "MobileNumber" (no space) and matches
+            // NOTHING on NG's page (confirmed live, 0 matches). That was silently falling through
+            // to SafeActions' generic 'mobileInput' self-heal heuristic (#header-username — the
+            // ALWAYS-PRESENT header inline-login field, unrelated to this modal) and "succeeding"
+            // by filling THAT instead of the real modal field — burning ~60s+ per field on top of
+            // never touching the actual form, which is what was blowing the 90s beforeEach
+            // timeout T5/T7 were hitting. Needs an NG override for `signUp.mobileInput` pointing
+            // at `input[data-id="MobileNumber"]` (see src/regions/NG/locators.ts) for this branch
+            // to reliably fill the real field.
+            await this.safeActions.safeFill('confirmPasswordInput', this.loc.confirmPasswordInput, password);
+            await this.selectDateOfBirth();
+            await this.selectTerritory();
+            await this.loc.ageCheckbox.check();
+            return;
+        }
+
         await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
         await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
 
-        if (activeRegion() === 'MW') {
-            // Confirmed live: MW's Step-1 form has no Email field at all — only
+        if (['MW', 'MZ'].includes(activeRegion())) {
+            // Confirmed live: MW's and MZ's Step-1 forms have no Email field at all — only
             // MobileNumber/Password/FirstName/LastName (see the signUp overrides in
-            // regions/MW/locators.ts for the region-specific field locators).
+            // regions/MW/locators.ts and regions/MZ/locators.ts for the region-specific field locators).
             return;
         }
 
@@ -253,6 +334,19 @@ export class SignUpPage extends BasePage {
         // Some calendar configurations require an explicit confirm click; harmless no-op if the
         // picker already closed itself on day selection.
         try { await this.page.getByText('Ok', { exact: true }).click({ timeout: 2000 }); } catch { /* auto-confirmed */ }
+    }
+
+    /** NG-only: opens NG's Territory dropdown and picks the first option. Confirmed live — a
+     *  PrimeVue Dropdown panel teleported to the end of body, same widget family as the Date of
+     *  Birth calendar above. */
+    async selectTerritory() {
+        await this.loc.territoryDropdown.click();
+        await this.page.waitForTimeout(500);
+        const option = this.page.locator('[role="listbox"] [role="option"], .p-dropdown-item').first();
+        if (await option.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await option.click();
+        }
+        await this.page.waitForTimeout(300);
     }
 
     // ------------------------------------------------------------------

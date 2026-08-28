@@ -22,7 +22,14 @@ export class BetInfluencerModal extends BetslipPage {
             // Bet Influencer panel — clicking it navigated to the wrong section entirely. Affects
             // every region (confirmed on both GH and ZA), not just one.
             summaryButton: (root) => root.locator('#my-account-main').getByText('summary', { exact: false }).first(),
-            detailButton: first(text('details')),
+            // Confirmed live on NG: same bug class as summaryButton above — an unscoped "details"
+            // text search matches a signup/FAQ paragraph ("...fill in your personal details.")
+            // elsewhere on the page BEFORE the real "Details" tab inside the Bet Influencer panel.
+            // That paragraph sits behind the panel's modal overlay, so every click attempt is
+            // intercepted by the overlay and times out after all retries — this was the actual
+            // failure behind clickDetailButton() throwing (cascading into every test that reaches
+            // the Details page: gotoDetailSectionBetInfluencerModal() and its callers).
+            detailButton: (root) => root.locator('#my-account-main').getByText('details', { exact: false }).first(),
             lastFourWeeksCanvas: first(text('Last four weeks')),
             detailedBreakdownButton: first(text('Detailed breakdown')),
             totalMonthlyRevenue: first(text('Total Revenue')),
@@ -118,14 +125,43 @@ export class BetInfluencerModal extends BetslipPage {
         await this.page.waitForSelector('text=Revenue', { state: 'visible' });
         await this.page.waitForTimeout(2000);
     }
+    /**
+     * Clicks `locator`, dismissing a promotional popup that appears in between retries. Confirmed
+     * live on MZ: a promotional interstitial (its own dedicated close button) can layer on top of
+     * an already-open panel on a delay and intercept clicks meant for the panel's own content.
+     * Closes only the LAST (topmost, most-recently-mounted) `#modal-close-btn` match — the panel
+     * itself was already open before any promo layered on top of it, so its own close button is
+     * never the last match, and clicking it here would incorrectly close the panel we're using.
+     */
+    private async clickDismissingPromo(locator: import('@playwright/test').Locator, attempts = 4) {
+        for (let i = 0; i < attempts; i++) {
+            try {
+                await locator.click({ timeout: 8000 });
+                return;
+            } catch (e) {
+                if (i === attempts - 1) throw e;
+                const closeButtons = this.page.locator('#modal-close-btn').filter({ visible: true });
+                const count = await closeButtons.count().catch(() => 0);
+                if (count > 1) {
+                    try { await closeButtons.last().click({ timeout: 3000 }); await this.page.waitForTimeout(300); } catch { /* not shown */ }
+                }
+            }
+        }
+    }
+
     async clickDetailButton() {
-        await this.loc.detailButton.click();
+        await this.clickDismissingPromo(this.loc.detailButton);
     }
 
     async sortByDropDownFunctionalityChacek(screenshotDir: string, testInfo: TestInfo) {
         const sortbutton = this.page.locator('xpath=//*[@id="my-account-main"]/div/div[2]/div/div[1]/div[2]/div/div');
         for (let i = 0; i < 6; i++) {
-            await sortbutton.click();
+            // Confirmed live on NG: the same promotional interstitial clickDismissingPromo() already
+            // guards clickDetailButton() against (see above) can also layer on top of the panel
+            // mid-loop here — observed landing squarely over the sort dropdown after a prior
+            // ArrowDown+Enter selection, blocking every remaining iteration's click until timeout.
+            // Route through the same dismiss-and-retry helper instead of a raw click.
+            await this.clickDismissingPromo(sortbutton);
             await this.page.keyboard.press('ArrowDown');
             await this.page.keyboard.press('Enter');
             await highlightElements(sortbutton);
@@ -147,7 +183,13 @@ export class BetInfluencerModal extends BetslipPage {
 
     async User2PlaceBetsFromBookingCode(bookingCode: any) {
         await this.LoginArgs(`${userData.user5.mobile}`, `${userData.user5.password}`);
-        await this.loc.welcomeUser.waitFor({ state: 'visible' });
+        // Confirmed live: the unscoped `welcomeUser` ("Welcome" text) locator this used to wait on
+        // is a strict-mode violation on ZA — it also matches an unrelated "Welcome To Betway Feed"
+        // widget elsewhere on the page, same class of bug already fixed for T9's login check (see
+        // verifyWelcomeUser() below) via the Deposit-button signal instead of raw "Welcome" text.
+        // user5 has no `name` field in userData.json; verifyWelcomeUser() tolerates that fine — the
+        // username highlight is best-effort only, not required for the check itself to pass.
+        await this.verifyWelcomeUser(userData.user5.name);
         await this.loc.betslipButton.click();
         const SharedBookingCode = await GetBookingCode(bookingCode);
         await this.loc.bookingCodeInput.fill(`${SharedBookingCode}`);

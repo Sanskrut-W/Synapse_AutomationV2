@@ -44,7 +44,10 @@ export class BetSaverPage extends BasePage {
             betAmountInput: css('#bet-amount-input'),
             betNowButton: first(role('button', { name: 'Bet Now' })),
             betslipDeleteButton: css('#betslip-remove-all'),
-            closePopup: css('#modal-close-btn'),
+            // Confirmed live on MZ: this id can be duplicated on multiple elements at once — an
+            // unscoped match risks a strict-mode violation on isVisible() (same fix already applied
+            // to TransactionHistoryPage's own closePopup).
+            closePopup: first(css('#modal-close-btn')),
 
             // --- Booking Code & Sharing ---
             bookABet: first(role('button', { name: 'Codesicon' })),
@@ -274,10 +277,18 @@ export class BetSaverPage extends BasePage {
 
     async placeQualifyingBetAndNavigateToMyBets(numberOfOdds: number = 3) {
         await this.loc.gotit.click().catch(() => { });
+        // Confirmed live on NG (headless run — no explicit viewport means the responsive layout
+        // decides its own default size): below Tailwind's `xl` breakpoint a mobile-style bottom
+        // tab bar overlaps the Bet Now button and it never becomes visible/clickable at all,
+        // exactly the same class of layout issue already fixed for
+        // placeBetsaverActiveBetAndNavigateToMyBets() below (there attributed to MZ) — this method
+        // was missing the same explicit desktop viewport + scroll-into-view.
+        await this.page.setViewportSize({ width: 1920, height: 1080 });
         await this.preparePage();
         // await this.safeClick(this.loc.upcomingButton, "Upcoming Button");
         await OddsSelectionAbove(numberOfOdds, 2.0, this.page);
         await this.safeClick(this.loc.multiBetSlip, 'BetSaver Not Active');
+        await this.loc.betNowButton.scrollIntoViewIfNeeded();
         await this.safeClick(this.loc.betNowButton, 'BetNow Button');
         await this.page.waitForTimeout(3000);
         await this.closePopup();
@@ -286,6 +297,16 @@ export class BetSaverPage extends BasePage {
     }
 
     async placeBetsaverActiveBetAndNavigateToMyBets(numberOfOdds: number = 7, oddsAbove: number = 2.0) {
+        // Confirmed live on MZ: a "Got it" cookie/consent bar can sit fixed at the bottom of the
+        // page and intercept the Bet Now click below for the full test timeout. The other two
+        // "place a bet" flows in this file (placeQualifyingBetAndNavigateToMyBets,
+        // setupBetsaverActive) already dismiss it defensively first; this one was missing it.
+        await this.loc.gotit.click().catch(() => { });
+        // Confirmed live on MZ: below Tailwind's `xl` breakpoint, a mobile-style bottom tab bar
+        // (its own "Betslip" button) renders and overlaps the Bet Now button, intercepting the
+        // click for the full test timeout — same class of responsive-layout issue already worked
+        // around in NewHomePage's tests via an explicit desktop viewport.
+        await this.page.setViewportSize({ width: 1920, height: 1080 });
         await this.preparePage();
         await OddsSelectionAbove(numberOfOdds, oddsAbove, this.page);
         // await this.safeClick(this.loc.multiBetSlip, "BetSaver Not Active");

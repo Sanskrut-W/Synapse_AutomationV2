@@ -1,7 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, last, text } from '../locators/sel';
+import { css, last, text, role } from '../locators/sel';
 import { highlightElementBorder, highlightElements } from '../flows/HighlightElements';
 
 /**
@@ -22,6 +22,12 @@ export class HomePage extends BasePage {
             ContactUs: last(css('a[href="/contact-us"]')),
             howtobet: last(css('a[href="/how-to-bet"]')),
             FAQs: last(css('a[href="/frequently-asked-questions"]')),
+            // Confirmed live (NG): NG's real FAQ page heading text is "Frequently Asked Questions"
+            // rendered as a plain styled <div> (not a semantic <h1>/<h2>, and not ZA's "FAQ's"
+            // wording) — extracted into its own overridable key rather than left hardcoded inline
+            // in clickFAQsLink() so a region with different wording/markup can override it (see
+            // regions/NG/locators.ts).
+            FAQHeading: role('heading', { name: "FAQ's" }),
             TermsAndConditions: last(css('a[href="/terms-and-conditions"]')),
             BettingRules: last(css('a[href="/betting-rules-and-tips"]')),
             BetwayApp: last(css('a[href="/betway-app"]')),
@@ -223,7 +229,7 @@ export class HomePage extends BasePage {
         await this.loc.FAQs.click({ force: true });
         await this.page.waitForLoadState('domcontentloaded');
         await expect(this.page).toHaveURL(/.*frequently-asked-questions*/, { timeout: 15000 });
-        await highlightElementBorder(this.page.getByRole('heading', { name: "FAQ's" }));
+        await highlightElementBorder(this.loc.FAQHeading);
     }
 
     async clickFAQSBackButton() {
@@ -290,8 +296,13 @@ export class HomePage extends BasePage {
 
     async clickBettingRulesLink() {
         await this.safeActions.safeClick('BettingRules', this.loc.BettingRules);
-        await expect(this.page).toHaveURL(/.*betting-rules-and-tips*/, { timeout: 15000 });
-        await highlightElementBorder(this.page.getByRole('heading', { name: 'Betting Rules and Tips' }).first());
+        // Confirmed live (NG): NG's real Betting Rules destination is /betting-rules with heading
+        // "Betting Rules" (no "and Tips") — a genuine in-app page reached via NG's own BettingRules
+        // override (regions/NG/locators.ts), just a different slug/heading than ZA's
+        // "/betting-rules-and-tips" / "Betting Rules and Tips". Broadened the URL/heading match so
+        // both real wordings pass instead of asserting only ZA's.
+        await expect(this.page).toHaveURL(/.*betting-rules.*/i, { timeout: 15000 });
+        await highlightElementBorder(this.page.getByRole('heading', { name: 'Betting Rules' }).first());
         await this.page.waitForLoadState('domcontentloaded');
     }
 

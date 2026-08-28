@@ -3,15 +3,27 @@ import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { OddsSelectionAbove } from '../flows/OddSelection';
 import { activeRegion } from '../config/oddsApiUrl';
 
-// TZ/GH's Win Boost tiers need 3 legs to reach the first real tier (3%, tooltip "Win Boost 3%. 1
-// more for 5%") — 2 legs isn't enough to trigger any Win Boost on those regions. ZA's own tiers
-// start at 2 legs (2%, tooltip "Win Boost 2%. 1 more for 3%"), confirmed already working there.
+// TZ/GH/ZM/NG's Win Boost tiers need 3 legs to reach the first real tier (3%, tooltip "Win Boost
+// 3%. 1 more for 5%") — 2 legs isn't enough to trigger any Win Boost on those regions. ZA's own
+// tiers start at 2 legs (2%, tooltip "Win Boost 2%. 1 more for 3%"), confirmed already working
+// there. MW and MZ also need 3 legs to trigger Win Boost, but — unlike TZ/GH/ZM/NG — their
+// tooltip wording matches ZA's own base text exactly ("Win Boost 2%. 1 more for 3% (Min odds
+// 1.2)"), confirmed live, so they need no separate tooltip override — just the extra leg
+// (winBoostValue's currency still needs its own per-region override — see regions/MW and
+// regions/MZ locators.ts).
 function winBoostLegs(): number {
-    return ['TZ', 'GH'].includes(activeRegion()) ? 3 : 2;
+    return ['TZ', 'GH', 'MW', 'MZ', 'ZM', 'NG'].includes(activeRegion()) ? 3 : 2;
+}
+
+// MW's Bet Saver threshold needs 8 legs to activate — confirmed live. ZA's own threshold is
+// already covered by 7. (Earlier live checks found no Bet Saver text on MW at all, but those never
+// switched the betslip to its Multi tab first — the same missing step that was masking Win Boost.)
+function betSaverLegs(): number {
+    return activeRegion() === 'MW' ? 8 : 7;
 }
 
 export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) {
-    test.describe('Betslip Module - ZA', () => {
+    test.describe('Betslip Module', () => {
 
         test('T1-Verify Betslip Section without selecting any odd ', async ({ betslipPage }, testInfo) => {
             await betslipPage.verifyBetslipSection();
@@ -121,10 +133,8 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T15-Verify "Bet Saver" presence on betslip when be saver gets active.', async ({ betslipPage, page }, testInfo) => {
-            // Confirmed live: MW has no Bet Saver promotion at all — checked up to 9 legs with no
-            // "Bet Saver" text anywhere on the betslip.
-            test.skip(activeRegion() === 'MW', 'MW has no Bet Saver promotion at all');
-            await OddsSelectionAbove(7, 2, page);
+            await OddsSelectionAbove(betSaverLegs(), 2, page);
+            await betslipPage.clickMultiTab();
             await betslipPage.verifyBetSaverTextVisible();
             await ScreenshotHelper(page, screenshotDir, 'T15-betslip-Bet-Saver-presence-multi.png', testInfo);
         });
@@ -209,10 +219,11 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T24-Multi- Verify "Win boost" amount calculation on betslip.', async ({ betslipPage, page }, testInfo) => {
-            // Confirmed live: MW's betslip shows no Win Boost text/tooltip/value at all, even at 4
-            // legs — MW simply doesn't offer this promotion, unlike ZA/TZ/GH.
-            test.skip(activeRegion() === 'MW', 'MW has no Win Boost promotion on its betslip');
             await OddsSelectionAbove(winBoostLegs(), 2, page);
+            // Confirmed live on MW: the betslip doesn't auto-switch to the Multi tab just because
+            // multiple legs were added — Win Boost only evaluates/displays once Multi is actually
+            // active. Sibling tests (T22, T38) already click it explicitly for the same reason.
+            await betslipPage.clickMultiTab();
             await betslipPage.verifyWinBoostCalculation();
             await ScreenshotHelper(page, screenshotDir, 'T24-betslip-Win-boost-amount-calculation-multi.png', testInfo);
         });
@@ -231,15 +242,15 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         // });
 
         test('T26-Multi-Verify Win Boost tool tip', async ({ betslipPage, page }, testInfo) => {
-            test.skip(activeRegion() === 'MW', 'MW has no Win Boost promotion on its betslip');
             await OddsSelectionAbove(winBoostLegs(), 2, page);
+            await betslipPage.clickMultiTab();
             await betslipPage.verifyWinBoostToolTip();
             await ScreenshotHelper(page, screenshotDir, 'T26-betslip-Win-boost-tool-tip-multi.png', testInfo);
         });
 
         test('T27-Multi-Verify Win Boost pop up window', async ({ betslipPage, page }, testInfo) => {
-            test.skip(activeRegion() === 'MW', 'MW has no Win Boost promotion on its betslip');
             await OddsSelectionAbove(winBoostLegs(), 1.21, page);
+            await betslipPage.clickMultiTab();
             await betslipPage.verifyWinBoostInfoIcon();
             await betslipPage.clickWinBoostInfoIcon();
             await page.waitForTimeout(2000);

@@ -37,4 +37,11 @@ export const mwOverrides: RegionOverrides = {
         firstNameInput: css('input[data-id="FirstName"]'),
         lastNameInput: css('input[data-id="LastName"]'),
     },
+    betslip: {
+        // Confirmed live: MW's currency is MK (Malawian Kwacha), not ZA's R — the percentage tier
+        // itself matches ZA's ("2%"), same as winBoostToolTip already confirmed; only the currency
+        // symbol differs (unlike GH/TZ, which have their own overrides for both a different
+        // percentage tier AND currency — see regions/GH and regions/TZ locators.ts).
+        winBoostValue: text('Win Boost (2%): MK'),
+    },
 };

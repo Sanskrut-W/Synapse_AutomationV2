@@ -77,12 +77,15 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
         // });
         test('T39-Verify that User should able to click on "How to Bet SMS" on the How To page', async ({ howTo }, testInfo) => {
             // Confirmed live: TZ's, GH's, and MW's How-To pages have no "How To Bet SMS" tab (0 matches).
-            test.skip(['TZ', 'GH', 'MW'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            // NG confirmed live too: its How-To page's full real tab list is How To Bet / Register /
+            // Reset Password / Withdraw / Betgames / Casino / Deposit / "use your Free Bet" / "Build
+            // a Bet" — 0 matches anywhere on the page for "SMS" in any form, so no such section exists.
+            test.skip(['TZ', 'GH', 'MW', 'NG'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T39-b.png', testInfo);
         });
         test('T40-Verify that User should able to click on any option available on "How to SMS" section', async ({ howTo }, testInfo) => {
-            test.skip(['TZ', 'GH', 'MW'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            test.skip(['TZ', 'GH', 'MW', 'NG'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T40.png', testInfo);
         });

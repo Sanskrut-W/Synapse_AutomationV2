@@ -71,15 +71,19 @@ export const API_URLS: Record<Region, OddsApiConfig> = {
         liveTableTennis: 'https://en.betway.co.mz/sportsapi/br/v1/BetBook/LiveInPlay/?countryCode=MZ&sportId=table-tennis',
         esports: 'https://en.betway.co.mz/sportsapi/br/v1/BetBook/Highlights/?countryCode=MZ&sportId=esports-league-of-legends&Skip=0&Take=20&cultureCode=en-US&isEsport=true&boostedOnly=false&marketTypes=%5BMatch%20Winner%5D',
     },
-    // soccerUpcoming verified in the old repo's shared Common-Flows/OddSelection.ts (which was
-    // actually hardcoded to NG in its active code). esports/liveTableTennis's only usages hardcoded
-    // a leftover ZA URL — left empty. soccerHighlights: the old repo's OddsSelection/placeBetWithIndex/
-    // DrawNoBetOddsSelection/OddsSelectionAbove all resolved to the SAME "Upcoming" URL rather than a
-    // distinct "Highlights" one, so there's no separately-confirmed Highlights value for NG — left
-    // empty rather than guessing it matches soccerUpcoming.
+    // soccerUpcoming: the old repo's hardcoded www.betway.com.ng/sportsapi/... URL (ported below
+    // verbatim originally) turned out to be stale — confirmed live the real traffic actually hits
+    // feeds-roa2.betwayafrica.com, the same host already confirmed for BW/MZ above. The old,
+    // incorrect URL never matched a live response, so every OddsSelectionAbove()/OddsSelection()
+    // call for NG hung for its full timeout regardless of what else was being tested.
+    // esports/liveTableTennis's only usages hardcoded a leftover ZA URL — left empty.
+    // soccerHighlights: the old repo's OddsSelection/placeBetWithIndex/DrawNoBetOddsSelection/
+    // OddsSelectionAbove all resolved to the SAME "Upcoming" URL rather than a distinct
+    // "Highlights" one, so there's no separately-confirmed Highlights value for NG — left empty
+    // rather than guessing it matches soccerUpcoming.
     NG: {
         soccerHighlights: '',
-        soccerUpcoming: 'https://www.betway.com.ng/sportsapi/br/v1/BetBook/Upcoming/?countryCode=NG&sportId=soccer',
+        soccerUpcoming: 'https://feeds-roa2.betwayafrica.com/br/_apis/sport/v1/BetBook/Upcoming/?countryCode=NG&sportId=soccer',
         liveTableTennis: '',
         esports: '',
     },

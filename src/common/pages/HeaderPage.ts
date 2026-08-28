@@ -41,7 +41,12 @@ export class HeaderPage extends HomePage {
             statistics: role('link', { name: 'Statistics' }),
             insiderBlog: text('Insider Blog'),
             betwayScoresApp: first(text(' Betway Scores App')),
-            oddsFormat: text('Decimal'),
+            // Confirmed live on NG: an unrelated homepage paragraph ("Sports betting odds tell you
+            // two things... In Nigeria, we use decimal odds...") also contains the substring
+            // "Decimal", causing a strict-mode violation ("resolved to 2 elements") on the old
+            // non-exact match. The real toggle's own text content is exactly "Decimal" (nothing
+            // more) — exact:true keeps this unique on NG without narrowing the match anywhere else.
+            oddsFormat: text('Decimal', { exact: true }),
             mobileNumberInput: css('#header-username'),
             passwordInput: css('#header-password'),
             eyeButton: xpath("//div[contains(@class,'password-input')]//svg[contains(@name,'M12,9A3')]"),
@@ -212,7 +217,13 @@ export class HeaderPage extends HomePage {
         await highlightElementBorder(this.loc.bonusSummary);
         await highlightElementBorder(this.loc.transactionsHistory);
         await highlightElementBorder(this.loc.responsibleGaming);
-        if (activeRegion() !== 'GH') {
+        // Confirmed live: NG's My Account panel has no "Document Verification" option either,
+        // same gap as GH — its real panel lists exactly: My Gifts, My Profile, My Bets, Bonus
+        // Summary, Transaction History, Responsible Gaming, My Casino Big Wins, Bet Influencer,
+        // Promo Voucher, Betway Rewards, Live Chat, Log Out (0 DOM matches for the text anywhere
+        // on the page). This was hitting the 60s actionTimeout on documentVerification's
+        // highlightElementBorder() (never resolves).
+        if (!['GH', 'NG'].includes(activeRegion())) {
             await highlightElementBorder(this.loc.documentVerification);
         }
         if (activeRegion() !== 'MW') {
@@ -462,6 +473,11 @@ export class HeaderPage extends HomePage {
     }
 
     async clickAccountsButton() {
+        // Confirmed live on NG: a promotional interstitial (the same dark full-screen overlay +
+        // #modal-close-btn pattern already handled elsewhere — see MyBetsPage.clickMyBets()) can
+        // intercept this click, spinning through Playwright's actionability retries for the full
+        // 60s timeout before ever giving up. Dismiss it first; safe no-op everywhere else.
+        await this.closePromotionPopupIfVisible(3000);
         await this.loc.accountsButton.click();
     }
 

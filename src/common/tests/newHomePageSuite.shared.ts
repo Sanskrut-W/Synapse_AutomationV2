@@ -118,8 +118,8 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
 
             // Excel TC_BL_15 - Hero banner with Sport & Casino CTAs fully visible
             test('TC_BL_15 - Hero banner with Sport and Casino CTAs is visible', async ({ page }, testInfo) => {
-                // Confirmed live: MW has no Casino product at all — no hero Casino CTA exists.
-                test.skip(activeRegion() === 'MW', 'MW has no Casino product; no hero Casino CTA');
+                // Confirmed live: MW and MZ have no Casino product at all — no hero Casino CTA exists.
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no Casino product; no hero Casino CTA');
                 await home.verifyHeroBannerAndCtas();
                 await ScreenshotHelper(page, screenshotDir, 'TC_BL_15-hero-banner.png', testInfo);
             });
@@ -132,7 +132,7 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
 
             // Excel TC_BL_17 - Casino CTA on hero banner navigates to Casino page
             test('TC_BL_17 - Hero Casino CTA navigates to the Casino page', async ({ page }, testInfo) => {
-                test.skip(activeRegion() === 'MW', 'MW has no Casino product; no hero Casino CTA');
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no Casino product; no hero Casino CTA');
                 await home.clickHeroCasinoCta();
                 await ScreenshotHelper(page, screenshotDir, 'TC_BL_17-hero-casino-cta.png', testInfo);
             });
@@ -141,8 +141,16 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
             test('TC_BL_18 - Official Global Betting Partner branding is visible', async ({ page }, testInfo) => {
                 // Confirmed live: GH's homepage has zero occurrences of "partner" text anywhere —
                 // this branding element genuinely doesn't exist there, not a locator mismatch.
-                // MW also has zero occurrences (confirmed live) — same reasoning.
-                test.skip(['GH', 'MW'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
+                // MW and MZ also have zero occurrences (confirmed live) — same reasoning.
+                // TZ confirmed live too (diagnostic script scanned document.body.innerText for
+                // "partner"/"global"/"official" both before and after scrolling to the bottom of
+                // the homepage — zero "partner" matches at all; the only "global"/"official" hits
+                // are unrelated About-Betway-Tanzania copy) — same reasoning, not a locator gap.
+                // NG confirmed live too (same diagnostic script, both logged-out and logged-in,
+                // both before and after scrolling to the bottom): zero "partner"/"official"/"global"
+                // matches anywhere in document.body.innerText — this branding genuinely doesn't
+                // exist on NG's homepage either.
+                test.skip(['GH', 'MW', 'MZ', 'TZ', 'NG'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
                 await home.verifyPartnerBranding();
                 await ScreenshotHelper(page, screenshotDir, 'TC_BL_18-partner-branding.png', testInfo);
             });
@@ -233,14 +241,14 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
 
             // Excel TC_HP_13 - Hero banner displayed (full-width, CTAs)
             test('TC_HP_13 - Hero banner is displayed with CTA buttons', async ({ page }, testInfo) => {
-                test.skip(activeRegion() === 'MW', 'MW has no Casino product; no hero Casino CTA');
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no Casino product; no hero Casino CTA');
                 await home.verifyHeroBannerAndCtas();
                 await ScreenshotHelper(page, screenshotDir, 'TC_HP_13-hero-banner.png', testInfo);
             });
 
             // Excel TC_HP_14 - Sport (green) and Casino (blue) CTA buttons displayed
             test('TC_HP_14 - Sport and Casino CTA buttons are displayed on the hero banner', async ({ page }, testInfo) => {
-                test.skip(activeRegion() === 'MW', 'MW has no Casino product; no hero Casino CTA');
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no Casino product; no hero Casino CTA');
                 await home.verifyHeroBannerAndCtas();
                 await ScreenshotHelper(page, screenshotDir, 'TC_HP_14-hero-ctas.png', testInfo);
             });
@@ -253,7 +261,7 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
 
             // Excel TC_HP_16 - Casino CTA navigates to Casino page
             test('TC_HP_16 - Hero Casino CTA navigates to the Casino page', async ({ page }, testInfo) => {
-                test.skip(activeRegion() === 'MW', 'MW has no Casino product; no hero Casino CTA');
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no Casino product; no hero Casino CTA');
                 await home.clickHeroCasinoCta();
                 await ScreenshotHelper(page, screenshotDir, 'TC_HP_16-hero-casino-cta.png', testInfo);
             });

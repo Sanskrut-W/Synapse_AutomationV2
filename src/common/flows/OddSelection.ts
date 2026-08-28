@@ -16,6 +16,29 @@ import { API_URLS, activeRegion, OddsApiConfig } from '../config/oddsApiUrl';
  * already arrives before the listener attaches, and waitForResponse then hangs for its full
  * timeout waiting for a response that already happened. This was surfacing consistently on GH.
  */
+/**
+ * Clicks `locator`, dismissing any promotional popup that appears in between retries. Confirmed
+ * live on MZ: promotional interstitials (their own dedicated close button, distinct from any
+ * legitimate panel) can mount on a delay — a "show after a few seconds" pattern — so a single
+ * close-before-clicking pass can miss one that appears mid-retry. Safe to use only where nothing
+ * legitimate could be open yet (e.g. right after a fresh reload).
+ */
+async function clickDismissingPopups(page: Page, locator: ReturnType<Page['locator']>, attempts = 6) {
+    for (let i = 0; i < attempts; i++) {
+        try {
+            await locator.click({ timeout: 8000 });
+            return;
+        } catch (e) {
+            if (i === attempts - 1) throw e;
+            const closeButtons = page.locator('#modal-close-btn').filter({ visible: true });
+            const closeCount = await closeButtons.count().catch(() => 0);
+            for (let j = 0; j < closeCount; j++) {
+                try { await closeButtons.first().click({ timeout: 3000 }); await page.waitForTimeout(300); } catch { /* not shown */ }
+            }
+        }
+    }
+}
+
 async function waitForOddsApi(page: Page, apiUrl: string, trigger: () => Promise<unknown>) {
     const responsePromise = page.waitForResponse((r) => r.url().startsWith(apiUrl) && r.status() === 200);
     await trigger();
@@ -123,14 +146,44 @@ export async function OddsSelectionAbove(numberOflegs: number, minOdd: number, p
     const soccerUpcoming = requireUrl('soccerUpcoming');
 
     const data = await waitForOddsApi(page, soccerUpcoming, async () => {
-        // stabilize page
-        await page.reload({ waitUntil: 'domcontentloaded' });
+        // Confirmed live on MZ: below Tailwind's `xl` breakpoint a mobile-style bottom tab bar
+        // renders and can intercept the odd-price clicks below — each click failure is caught and
+        // silently skipped (see the loop below), so this can end with zero legs selected and no
+        // thrown error at all. Same class of responsive-layout issue already worked around in
+        // NewHomePage/BetSaverPage via an explicit desktop viewport.
+        await page.setViewportSize({ width: 1920, height: 1080 });
 
-        // close modal if present
-        try { await page.locator('#modal-close-btn').click({ timeout: 10000 }); } catch { /* not shown */ }
+        // stabilize page — confirmed live on MZ: calling this right after a page/fixture setup
+        // that just navigated (e.g. login) can race an in-flight navigation, aborting the reload
+        // with net::ERR_ABORTED. Retrying once after a short settle avoids that race.
+        try {
+            await page.reload({ waitUntil: 'domcontentloaded' });
+        } catch {
+            await page.waitForTimeout(1000);
+            await page.reload({ waitUntil: 'domcontentloaded' });
+        }
 
-        // ensure Upcoming tab is active
-        await page.locator('#sports-tabs div').filter({ hasText: 'Upcoming' }).first().click();
+        // Confirmed live on MZ: right after a reload there's a brief window where client-side
+        // session hydration hasn't finished — the header can show a logged-out state (Login/Sign
+        // Up buttons) even though the user is genuinely authenticated, which then hides the Bet Now
+        // button entirely later in the flow. Same issue already documented and handled in
+        // BetSaverPage.preparePage(); best-effort, so a genuinely logged-out flow just times out
+        // and continues.
+        await page.getByRole('button', { name: 'Deposit' }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => { });
+
+        // close ALL currently-visible modal popups — confirmed live on MZ: more than one can be
+        // open at once (several popups share the same underlying modal component, e.g. a
+        // promotional interstitial layered with another), so closing only the first can leave a
+        // second one still open to intercept the Upcoming-tab click right after.
+        const closeButtons = page.locator('#modal-close-btn').filter({ visible: true });
+        const closeCount = await closeButtons.count().catch(() => 0);
+        for (let i = 0; i < closeCount; i++) {
+            try { await closeButtons.first().click({ timeout: 5000 }); await page.waitForTimeout(300); } catch { /* not shown */ }
+        }
+
+        // ensure Upcoming tab is active — a delayed-appearing promo can still intercept this even
+        // after the sweep above, so retry with fresh dismissals rather than a single attempt.
+        await clickDismissingPopups(page, page.locator('#sports-tabs div').filter({ hasText: 'Upcoming' }).first());
     });
 
     let selected = 0;
@@ -147,7 +200,10 @@ export async function OddsSelectionAbove(numberOflegs: number, minOdd: number, p
         try {
             await oddLocator.waitFor({ state: 'visible', timeout: 10000 });
             await oddLocator.scrollIntoViewIfNeeded();
-            await oddLocator.click();
+            // A delayed-appearing promo popup can intercept this click; retry with a dismiss
+            // rather than silently skipping the event (see clickDismissingPopups above) — with a
+            // small attempt count so a genuinely stale/off-screen odd still fails fast.
+            await clickDismissingPopups(page, oddLocator, 2);
             selected++;
             await page.waitForTimeout(1000);
         } catch {

@@ -185,6 +185,24 @@ export class FeedsPage extends BasePage {
         await this.page.waitForTimeout(2000);
         await this.loc.feeds.click();
         await this.page.waitForTimeout(2000);
+
+        // Confirmed live (TZ): a Betway account that has never created a Feeds profile shows a
+        // "Create Profile" onboarding modal (profilenameInFeeds/handleInFeeds/createProfileinFeeds
+        // below) instead of the profile's Post/Followers/Following counts block. That counts block
+        // is a second `.feeds-header-container` element (loc.feedsHeader targets it at nth(1)) that
+        // only renders once a profile exists — without one it never appears, which is what made the
+        // T17 screenshot step (captureScreenshot('feedsHeader', ...) -> highlightElements ->
+        // locator.evaluate) hang until the full 60s action timeout was hit. Bootstrapping a profile
+        // here — using locators that were already declared for exactly this but never wired up to
+        // any method — makes the flow work regardless of whether the logged-in account already has
+        // a Feeds profile. Once created, re-opening the sidebar (above) renders the counts block
+        // within ~1s (confirmed live), well inside the wait below.
+        if (await this.loc.createProfileinFeeds.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await this.loc.profilenameInFeeds.fill('Auto Testing');
+            await this.loc.handleInFeeds.fill(`autotesting${Date.now()}`);
+            await this.loc.createProfileinFeeds.click();
+            await this.page.waitForTimeout(3000);
+        }
     }
 
     /** T18: Perform Like, Comment, and Share actions in Profile Popup. */

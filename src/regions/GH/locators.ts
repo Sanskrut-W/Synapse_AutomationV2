@@ -1,5 +1,5 @@
 import { RegionOverrides } from '../../common/locators/sel';
-import { css, last, role, first, at, text } from '../../common/locators/sel';
+import { css, last, role, first, text } from '../../common/locators/sel';
 
 /**
  * GH (Ghana) overrides — confirmed against the old repo's src/regions/GH/pages/*.ts and the real
@@ -37,9 +37,12 @@ export const ghOverrides: RegionOverrides = {
     signUp: {
         // Confirmed live: GH's Sign Up modal labels its Mobile Number field "Mobile Number" (with a
         // space) — ZA's identical-looking modal labels the same field "MobileNumber" (no space).
-        // Index 1 skips the header's own persistent "Mobile Number" field (index 0), same convention
-        // already used for passwordInput.
-        mobileInput: at(role('textbox', { name: 'Mobile Number', exact: true }), 1),
+        // Was hardcoded `.at(1)` to skip the header's own persistent "Mobile Number" field (index 0)
+        // — confirmed live this regressed: the header field isn't always present (only 1 match
+        // exists right now, so index 1 resolves to nothing), exactly the same fragility already
+        // fixed for `passwordInput` in SignUpPage.ts. `last()` is robust to both cases (0 or 1
+        // extra header match) since the modal's own field is always the last match in DOM order.
+        mobileInput: last(role('textbox', { name: 'Mobile Number', exact: true })),
     },
     betslip: {
         // Confirmed live (3 legs selected): GH's Win Boost tiers match TZ's exactly — 3% at 3 legs,

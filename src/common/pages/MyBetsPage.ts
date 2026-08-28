@@ -1,7 +1,7 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, text, first } from '../locators/sel';
+import { css, role, text, first, within } from '../locators/sel';
 import { highlightElements } from '../flows/HighlightElements';
 import { activeRegion } from '../config/oddsApiUrl';
 
@@ -16,7 +16,18 @@ export class MyBetsPage extends BasePage {
             myBetsButton: first(text('My Bets')),
             openBetsTab: first(text('Open Bets')),
             settledBetsTab: first(text('Settled Bets')),
-            categoryDropdown: first(text('Sports', { exact: true })),
+            // Confirmed live on NG: unscoped, `first(text('Sports', {exact:true}))` does NOT
+            // resolve to the modal's own category dropdown at all — NG's page carries an SEO/
+            // help-content block ("How to Place a Football Bet": "Go to the **Sports** section
+            // and select **Football**") whose bolded "Sports" sits earlier in the DOM than the My
+            // Bets modal, so .first() matched that background text instead. Because it sits behind
+            // the modal's full-screen overlay, every click on it was blocked ("... subtree
+            // intercepts pointer events"), looping until the 60s action timeout — this was T5's
+            // real failure, not a popup or an empty-account state. Scoping to the modal's own
+            // `#my-bets-container` (already used below by detailViewContainer/hideLossesToggle)
+            // resolves to the real in-modal label and clicks cleanly — verified live via a
+            // standalone script.
+            categoryDropdown: within(css('#my-bets-container'), first(text('Sports', { exact: true }))),
             betgamesOption: (root) => root.getByLabel('Betgames').getByText('Betgames'),
             luckyNumbersOption: (root) => root.getByLabel('Lucky Numbers').getByText('Lucky Numbers'),
             jackpotsOption: (root) => root.getByLabel('Betway Jackpots').getByText('Betway Jackpots'),
@@ -57,6 +68,15 @@ export class MyBetsPage extends BasePage {
     // ------------------------------------------------------------------
 
     async clickMyBets() {
+        // Confirmed live on NG: a delayed marketing/promo interstitial (an "EPL Leaderboard" toast
+        // — same #modal-close-btn every generic modal in this flow reuses, see BasePage's own
+        // comment on that id) can appear well after goto()/Login() already ran their own dismissal
+        // window, sitting on top as a fixed, full-screen overlay and intercepting the click on
+        // myBetsButton ("... subtree intercepts pointer events") until the action times out.
+        // BasePage's closePromotionPopupIfVisible() already exists for exactly this (safe no-op
+        // when nothing is showing) but was previously only invoked right after goto()/Login() —
+        // call it once more here, at the point this was actually observed live blocking My Bets.
+        await this.closePromotionPopupIfVisible(3000);
         await this.loc.myBetsButton.click();
     }
 
@@ -102,8 +122,16 @@ export class MyBetsPage extends BasePage {
                 await this.loc.betgamesOption.click();
                 break;
             case 'Betway Jackpots':
-                await this.loc.betgamesOption.click(); // Click previous to open
-                await this.loc.luckyNumbersOption.click();
+                // Confirmed live on NG: this ended on `luckyNumbersOption.click()` — which selects
+                // "Lucky Numbers", not "Betway Jackpots". `jackpotsOption` (getByLabel('Betway
+                // Jackpots')) already existed as a loc entry and is the correct target; it just
+                // wasn't being used here. Live-reproduced via the T5 test hanging on
+                // getByLabel('Lucky Numbers') afterwards in the 'Sports' case below (which assumed,
+                // consistent with this same bug, that "Lucky Numbers" was the current label). This
+                // branch runs for every non-GH region T5 executes against (NG/ZA/ZM/MW/BW/MZ), not
+                // just NG.
+                await this.loc.betgamesOption.click(); // Betgames is the current label — click to reopen
+                await this.loc.jackpotsOption.click();
                 break;
             case 'Jackpots':
                 await this.loc.luckyNumbersOption.click(); // Click previous to open
@@ -114,11 +142,10 @@ export class MyBetsPage extends BasePage {
             //     await this.loc.toteOption.click();
             //     break;
             case 'Sports':
-                // Pre-existing bug: this assumed "Tote" was the current label, but 'Tote' is never
-                // actually selected in the active test flow (its case is commented out above) — the
-                // real preceding selection is "Lucky Numbers" (from the 'Betway Jackpots' case),
-                // confirmed live via the timeout this caused waiting for "Tote" text that isn't shown.
-                await this.loc.luckyNumbersOption.click(); // Click previous to open
+                // Confirmed live on NG: now that 'Betway Jackpots' above correctly ends on
+                // "Betway Jackpots" (see that case's own comment), the current label entering this
+                // case is "Betway Jackpots" — reopen via jackpotsOption, not luckyNumbersOption.
+                await this.loc.jackpotsOption.click(); // Betway Jackpots is the current label — click to reopen
                 await this.loc.categoryDropdown.click(); // 'categoryDropdown' is 'Sports'
                 break;
         }
@@ -207,6 +234,17 @@ export class MyBetsPage extends BasePage {
 
     async clickNextPage() {
         await this.loc.paginationNext.click();
+    }
+
+    // Confirmed live on NG: with too few Settled Bets to fill a second page (the shared demo
+    // account can even have zero), the "Next" control stays in the DOM but renders with
+    // `pointer-events-none opacity-50` classes rather than a real `disabled` attribute/aria-disabled
+    // — so Playwright sees it as visible/enabled/stable and retries the click forever ("... intercepts
+    // pointer events") until the action timeout, since it structurally can never receive a pointer
+    // event. Check the CSS-disabled state up front instead of clicking blind.
+    async isNextPageDisabled(): Promise<boolean> {
+        const classAttr = await this.loc.paginationNext.getAttribute('class').catch(() => null);
+        return !!classAttr && classAttr.includes('pointer-events-none');
     }
 
     // ------------------------------------------------------------------

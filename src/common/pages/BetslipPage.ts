@@ -17,7 +17,11 @@ export class BetslipPage extends SportsPage {
             passwordInput: css('#header-password'),
             closePromotionPopup: css('#modal-close-btn'),
             sportButton: css('img[alt="Sport"]'),
-            betslipButton: text('Betslip 0'),
+            // Was hardcoded to the literal "Betslip 0" — only ever matched before any legs were
+            // added. Once legs are in the slip the counter reads "Betslip 3", etc., so a fixed "0"
+            // stops matching the moment it's needed most (e.g. reopening the panel after adding
+            // legs). Matches any count, same pattern already used by NewHomePage's betslipCounter.
+            betslipButton: first(text(/Betslip\s*\d+/)),
             betslipCount: css('[data-testid="betslip-count"]'),
             singleTab: css('#betslip-single-tab'),
             multiTab: css('#betslip-multi-tab'),
@@ -36,12 +40,13 @@ export class BetslipPage extends SportsPage {
             deleteIcon: css('#betslip-remove-all'),
             selectAllCheckbox: css('#betslip-select-all'),
             removeLegIcon: css('#remove-event-betslip'),
-            // Confirmed live on MW: multiple legs in the betslip each render an element sharing the
-            // same #bet-amount-input id (a markup duplicate-id issue, not per-leg fields), and the
-            // hidden duplicates aren't reliably last in DOM order, so first() alone could still grab
-            // a hidden one — Playwright's :visible pseudo-class picks the real, interactable one.
+            // Confirmed live on MW: two elements share the id #bet-amount-input at once — a real,
+            // editable stake field (type="number", no readonly) sitting right next to the "Bet
+            // Amount:"/"MK" labels, and a decoy (type="text" readonly inputmode="none") that's
+            // ALSO visible at the same time. :visible alone can't tell them apart and may grab
+            // whichever is first in DOM order; excluding [readonly] picks the real one specifically.
             // Harmless where only one match exists.
-            betAmountInput: first(css('#bet-amount-input:visible')),
+            betAmountInput: first(css('#bet-amount-input:visible:not([readonly])')),
             loginBtnBetslip: css('#betslip-container'),
             betNowBtn: css('#betslip-strike-btn'),
             shareBtn: css('#betslip-share-btn'),
@@ -301,6 +306,17 @@ export class BetslipPage extends SportsPage {
     }
 
     async clickMultiTab() {
+        // Confirmed live on MW: the betslip panel doesn't auto-expand after legs are added the way
+        // it apparently does elsewhere — the Multi tab exists in the DOM but stays hidden until the
+        // panel is opened via the main Betslip button. Only open it if it isn't already showing, so
+        // regions where the panel is already open (clicking Betslip again would just close it) are
+        // unaffected.
+        if (!(await this.loc.multiTab.isVisible().catch(() => false))) {
+            // The site's cookie-consent banner ("Got it") can still be showing at this point and
+            // will otherwise intercept the click below — confirmed live on MW.
+            try { await this.page.getByRole('button', { name: 'Got it' }).click({ timeout: 3000 }); } catch { /* not shown */ }
+            await this.loc.betslipButton.click();
+        }
         await this.loc.multiTab.click();
     }
 
@@ -405,6 +421,10 @@ export class BetslipPage extends SportsPage {
 
     // Input Methods
     async enterBetAmount(amount: string) {
+        // Confirmed live on MW: this field renders as HTML readonly until clicked (a click-to-edit
+        // pattern) — filling it directly fails with "element is not editable". Clicking first is
+        // harmless where the field is already editable.
+        await this.loc.betAmountInput.click();
         await this.loc.betAmountInput.fill(amount);
     }
 
@@ -466,7 +486,6 @@ export class BetslipPage extends SportsPage {
     }
 
     async verifyWinBoostCalculation() {
-        await this.enterBetAmount('1');
         await this.verifyWinBoostValue();
     }
 

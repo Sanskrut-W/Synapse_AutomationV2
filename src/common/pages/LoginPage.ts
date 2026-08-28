@@ -1,7 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { HomePage } from './HomePage';
 import { SafeActions } from '../actions/SafeActions';
-import { css, role, text, at } from '../locators/sel';
+import { css, role, text, at, first } from '../locators/sel';
 import { highlightElementBorder, highlightElements } from '../flows/HighlightElements';
 import { loadRegionData } from '../config/regionData';
 import { activeRegion } from '../config/oddsApiUrl';
@@ -19,9 +19,13 @@ export class LoginPage extends HomePage {
         // pattern, which could spread already-resolved Locators directly).
         const inherited = this.loc;
         this.loc = { ...inherited, ...this.build('login', {
-            mobileInput: role('textbox', { name: 'Mobile Number' }),
+            mobileInput: first(role('textbox', { name: 'Mobile Number' })),
             formPasswordInput: at(role('textbox', { name: 'Password' }), 1),
-            passwordInput: role('textbox', { name: 'Password' }),
+            // Uses the same precise "Enter Password" wording as BasePage.baseLoginLocators.password
+            // (rather than the broader "Password" substring) — confirmed live on MZ: the broader
+            // query can match a hidden element ahead of the real header field in DOM order,
+            // leaving `.first()` stuck on something that never becomes visible.
+            passwordInput: first(role('textbox', { name: 'Enter Password' })),
             formMobileInput: at(role('textbox', { name: 'Mobile Number' }), 1),
             loginButton: css('#login-btn'),
             // Same locator both these keys share in the old repo: a 2nd "Login"-named button that
@@ -34,7 +38,6 @@ export class LoginPage extends HomePage {
             CasinoButton: text('Casino'),
             signUpButtonfromHamburger: at(role('button', { name: 'Sign Up' }), 1),
             loginButtonFromPopup: at(role('button', { name: 'Login' }), 1),
-            welcomeUser: text('Welcome'),
             betInfluencer: text('Bet Influencer'),
         }) };
         this.loc.eyeButton = this.loc.formPasswordInput.locator('..').getByRole('img').first();
@@ -83,8 +86,19 @@ export class LoginPage extends HomePage {
             await highlightElements(avatar);
             return;
         }
-        await expect(this.page.getByText(`${username}`)).toBeVisible({ timeout: 15000 });
-        await highlightElements(this.page.getByText(`${username}`).locator('..'));
+        // Confirmed live on ZA: the current header no longer shows a "Welcome <name>" greeting at
+        // all (a real UI redesign, not a per-region quirk — same class of change already worked
+        // around for TZ above) — only an avatar icon + balance. Any "<username>" text still in the
+        // DOM belongs to unrelated content (e.g. the test account's own name resurfacing in a
+        // "recent bets"-style widget) and can be hidden, so it's no longer a reliable signal.
+        // The Deposit button appearing is the one signal that's held up across every region's
+        // current header (already the proven "logged in" indicator used elsewhere in this
+        // framework — see BetSaverPage.preparePage(), OddSelection.ts).
+        await expect(this.page.getByRole('button', { name: 'Deposit' }).first()).toBeVisible({ timeout: 15000 });
+        // Best-effort highlight of the username text if it happens to be visible — not required
+        // for the check to pass, since the current header may not show it at all.
+        const welcome = this.page.locator('header').getByText(`${username}`).first();
+        await highlightElements(welcome).catch(() => { });
     }
 
     // ── Navigation functions ─────────────────────────────────────────────────
@@ -145,7 +159,24 @@ export class LoginPage extends HomePage {
     // Login() is inherited from BasePage (via HomePage)
 
     async LoginArgs(mobile: string, password: string) {
+        // Confirmed live on MZ: below Tailwind's `xl` breakpoint a mobile-style bottom tab bar
+        // renders its OWN "Login" button, and `getByRole('button', {name:'Login'}).first()` below
+        // can match that one instead of the header's — opening a differently-structured login
+        // panel whose fields then fail to become visible. Forcing a desktop viewport avoids it
+        // (same class of responsive-layout issue already worked around in NewHomePage/BetSaverPage).
+        await this.page.setViewportSize({ width: 1920, height: 1080 });
         await this.goto();
+        // Confirmed live on MZ: the header shows a collapsed "Login" button instead of an
+        // always-visible inline Mobile Number field — same behavior BasePage.Login() already
+        // handles for this exact reason. This method has its own separate fill logic (it takes
+        // explicit mobile/password args rather than a fixed user), so it needs the same fallback.
+        try {
+            await this.loc.mobileInput.waitFor({ state: 'visible', timeout: 3000 });
+        } catch {
+            const loginButton = this.page.getByRole('button', { name: 'Login', exact: true }).first();
+            await loginButton.click({ timeout: 10000 }).catch(() => { });
+            await this.loc.mobileInput.waitFor({ state: 'visible', timeout: 10000 }).catch(() => { });
+        }
         await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
         await this.safeActions.safeFill('passwordInput', this.loc.passwordInput, password);
         await this.page.keyboard.press('Enter');

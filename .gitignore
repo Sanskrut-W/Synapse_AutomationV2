@@ -13,3 +13,7 @@ src/regions/*/screenshots/
 # Env
 .env
 .env.local
+
+# AI self-heal cache — a local speed/cost optimization (see src/common/ai/AiClient.ts), not a
+# source of truth. A confirmed-good AI suggestion belongs in the region's locators.ts instead.
+.selfheal-cache.json

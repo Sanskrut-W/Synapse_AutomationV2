@@ -104,15 +104,31 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
 
             test('35-Verify Document Verification option functionality', async ({ hamburgerMenuPage }, testInfo) => {
                 // Confirmed live: GH's My Account panel has no "Document Verification" option at all.
-                test.skip(activeRegion() === 'GH', 'GH has no "Document Verification" option in My Account');
+                // Confirmed live: NG's panel doesn't either — its real panel lists exactly: My
+                // Gifts, My Profile, My Bets, Bonus Summary, Transaction History, Responsible
+                // Gaming, My Casino Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Live
+                // Chat, Log Out (0 DOM matches for the text anywhere on the page) — this was
+                // hitting the 60s actionTimeout on documentVerification.scrollIntoViewIfNeeded().
+                test.skip(['GH', 'NG'].includes(activeRegion()), 'This region has no "Document Verification" option in My Account');
                 await hamburgerMenuPage.verifyAndClickDocumentVerification();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'DocVerification.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
             });
 
             test('36-Verify Betway Benefits option functionality', async ({ hamburgerMenuPage }, testInfo) => {
-                // Confirmed live: MW's My Account panel has no "Betway Benefits" option at all.
-                test.skip(activeRegion() === 'MW', 'MW has no "Betway Benefits" option in My Account');
+                // Confirmed live: MW's, MZ's, and TZ's My Account panel has no "Betway Benefits"
+                // option at all (TZ's panel lists exactly: My Gifts, My Profile, My Bets, Bonus
+                // Summary, Transaction History, Responsible Gaming, Document Verification, My Casino
+                // Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Log Out — 0 DOM matches
+                // for the "Betway Benefits" id or for that text anywhere on the page). This absence
+                // is what was hitting the 60s actionTimeout on
+                // betwayBenefits.scrollIntoViewIfNeeded() (never resolves -> full 90s test timeout +
+                // 1 retry = the reported ~2.8m failure).
+                // Confirmed live: NG's panel has the same gap — its real 12 items are My Gifts, My
+                // Profile, My Bets, Bonus Summary, Transaction History, Responsible Gaming, My
+                // Casino Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Live Chat, Log
+                // Out — no Betway Benefits (and no Document Verification either, handled above).
+                test.skip(['MW', 'MZ', 'TZ', 'NG'].includes(activeRegion()), 'This region has no "Betway Benefits" option in My Account');
                 await hamburgerMenuPage.verifyAndClickBetwayBenefits();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'BetwayBenefits.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -170,7 +186,11 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
 
         test('6-Verify Betway Scores App is visible and clickable in Hamburger Menu', async ({ headerPage }, testInfo) => {
             // Confirmed absent from ZM's hamburger menu entirely during the multi-region rollout.
-            test.skip(activeRegion() === 'ZM', 'Betway Scores App is not present in ZM');
+            // Confirmed live: also absent from NG's hamburger menu (0 DOM matches for the text
+            // anywhere on the page — the panel's real 12 items are My Gifts, My Profile, My Bets,
+            // Bonus Summary, Transaction History, Responsible Gaming, My Casino Big Wins, Bet
+            // Influencer, Promo Voucher, Betway Rewards, Live Chat, Log Out; no Betway Scores App).
+            test.skip(['ZM', 'NG'].includes(activeRegion()), 'Betway Scores App is not present in this region');
             await headerPage.verifyBetwayScoresApp();
             await ScreenshotHelper(headerPage.page, screenshotDir, 'T6-BetwayScoresApp.png', testInfo);
             await headerPage.clickBetwayScoresApp();
