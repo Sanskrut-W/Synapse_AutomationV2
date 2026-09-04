@@ -53,8 +53,10 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             });
 
             test('27-Verify My Casino Big Win option functionality', async ({ hamburgerMenuPage }, testInfo) => {
-                // Confirmed live: MW's My Account panel has no "My Casino Big Win" option at all.
-                test.skip(activeRegion() === 'MW', 'MW has no "My Casino Big Win" option in My Account');
+                // Confirmed live: MW's and MZ's My Account panels have no "My Casino Big Win"
+                // option at all (MZ has no Casino product at all — confirmed absent from its main
+                // nav too).
+                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no "My Casino Big Win" option in My Account');
                 await hamburgerMenuPage.verifyAndClickMyCasinoBigWin();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'CasinoBigWin.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();

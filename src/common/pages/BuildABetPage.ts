@@ -15,7 +15,6 @@ export class BuildABetPage extends BasePage {
             closePromotionPopup: css('#modal-close-btn'),
             firstMatchContainer: first(css('div.flex.flex-row.w-full.gap-1.text-xs')),
             buildABetTab: first(text('Build A Bet')),
-            randomMarketButton: first(css('.bg-light-200.dark\\:bg-dark-900.sticky.left-0.z-\\[11\\].md\\:z-10.md\\:pt-2.md\\:-mt-2.top-\\[112px\\].lg\\:top-\\[152px\\].hidden > .bg-dark-800 > .flex.items-center.w-full > div:nth-child(7) > .w-6')),
             infoMessage1x2: first(text('1X2 Bets Can Be Placed By Either Selecting A Home Win, A Draw, Or An Away Win.')),
             infoMessageDoubleChance: first(text('Double Chance Allows You To')),
             infoMessageBothTeamsScore: first(text('Both Teams To Score (GG/NG) Predict Whether Both Teams Will Score At Least One')),
@@ -63,9 +62,13 @@ export class BuildABetPage extends BasePage {
     }
 
     // 2. Action Methods
+    // Confirmed live: the old deeply-nested nth-child chain (randomMarketButton) matches zero
+    // elements — a stale sticky-nav-bar locator, not a market control at all, despite the name.
+    // marketExpandIcon (a market row's own expand/collapse chevron, already confirmed live and
+    // used by expandMarket() below) is the real, visible way to interact with a market here.
     async clickRandomMarketButton() {
-        await this.loc.randomMarketButton.click();
-        await this.page.waitForTimeout(7000); // Wait for action
+        await this.loc.marketExpandIcon.click();
+        await this.page.waitForTimeout(2000);
     }
 
     async clickFavorite() {

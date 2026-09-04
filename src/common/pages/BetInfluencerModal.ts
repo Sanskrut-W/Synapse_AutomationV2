@@ -33,15 +33,25 @@ export class BetInfluencerModal extends BetslipPage {
             lastFourWeeksCanvas: first(text('Last four weeks')),
             detailedBreakdownButton: first(text('Detailed breakdown')),
             totalMonthlyRevenue: first(text('Total Revenue')),
-            sortBySelector: first((root) => root.locator('#sortSelector')),
+            // Confirmed live: "#sortSelector" has zero matches on the real page — never a working
+            // locator. The real "Sort By" control is a PrimeVue-style dropdown; its floating
+            // "month"-style label ("Sort By") sits 2 parents above the actual clickable container.
+            sortBySelector: (root) => root.locator('#my-account-main').getByText('Sort By', { exact: true }).locator('..').locator('..'),
+            // The real "Sort" direction toggle is a standalone SVG icon (not a <button>) next to
+            // the Sort By dropdown — distinguished by its distinctive up/down-arrows path data,
+            // since it carries no accessible name or role of its own.
+            sortButton: (root) => root.locator('#my-account-main').locator('svg:has(path[d^="M18 21L14 17"])'),
             codesUsed: first(text('Codes used')),
             betsTaken: first(text('Bets taken')),
-            // Source Excel type is "css" for both — the old resolver's "css" branch never even
-            // reads `options`, so the intended {"name":"Next"}/{"name":"Previous"} filters were
-            // always ignored. Both resolve to the exact same first `.NextPrevBtn` element.
-            // Preserved verbatim.
-            nextButton: first((root) => root.locator('.NextPrevBtn')),
-            previousButton: first((root) => root.locator('.NextPrevBtn')),
+            // Confirmed live: this floating-label PrimeVue dropdown's "month" label sits 3 parents
+            // above the actual clickable dropdown container (span -> label -> label-wrapper ->
+            // dropdown container) — clicking the container opens the month picklist.
+            monthsSelector: (root) => root.locator('#my-account-main').getByText('month', { exact: true }).locator('..').locator('..').locator('..'),
+            // Confirmed live: "#my-account-main .NextPrevBtn" never matched anything — the real
+            // pagination controls are plain buttons with accessible names "Next"/"Previous". The
+            // "Previous" button only renders once a later page has been visited (absent on page 1).
+            nextButton: first((root) => root.locator('#my-account-main').getByRole('button', { name: 'Next' })),
+            previousButton: first((root) => root.locator('#my-account-main').getByRole('button', { name: 'Previous' })),
             revenue: first(text('This month')),
             betInfluencerLink1: first(role('link', { name: 'Bet Influencer' })),
             betInfluencerLink2: at(role('link', { name: 'Bet Influencer' }), 1),
@@ -62,7 +72,16 @@ export class BetInfluencerModal extends BetslipPage {
 
     async verifyBetInfluencerFromAccountPopup(mobile: any) {
         await this.toggleHambergerMenu();
-        await this.page.getByText('My Bets').nth(0).click();
+        // Confirmed live on MW: `.nth(0)` picked a hidden duplicate (4 total "My Bets" DOM
+        // matches, index 0 not visible) — same class of bug already fixed for MyBetsPage's own
+        // myBetsButton locator. Filter to the first VISIBLE match instead, and use a native
+        // DOM click (same confirmed-necessary fix as MyBetsPage.clickMyBets() — Playwright's
+        // simulated mouse click, even forced, doesn't trigger this element's handler on MW).
+        // NOTE: live-confirmed this still lands on the regular My Bets page rather than the
+        // "Account Options" popup this test expects next — MW's hamburger "My Bets" may not
+        // route through that secondary popup at all (a different, unresolved question from the
+        // click-mechanics bug fixed here). Left as-is rather than guessing a workaround.
+        await this.page.getByText('My Bets').filter({ visible: true }).first().evaluate((el: HTMLElement) => el.click());
         await this.page.getByText(`Account Options: ${mobile} `);
         const windowBetInfluencer = this.page.getByRole('link', { name: 'Bet Influencer' }).nth(1);
         await windowBetInfluencer.waitFor({ state: 'visible', timeout: 5000 });
@@ -74,22 +93,36 @@ export class BetInfluencerModal extends BetslipPage {
         await this.loc.detailedBreakdownButton.click();
     }
 
+    // The "Sort" icon-button is a standalone SVG next to the sort-by dropdown, not inside it — a
+    // different, adjacent control (see loc.sortButton).
+    async verifyAndClickSortButton() {
+        await highlightElements(this.loc.sortButton);
+        await this.loc.sortButton.click();
+    }
+
     async verifyNextButton(screenshotDir: string, testInfo: TestInfo) {
         await highlightElements(this.loc.nextButton);
     }
 
     async verifyPreviousButton(screenshotDir: string, testInfo: TestInfo) {
-        await highlightElements(this.loc.previousButton);
+        // Confirmed live: "Previous" only renders once a later page has actually been visited —
+        // it's simply absent from the DOM on page 1, not just disabled.
+        if (await this.loc.previousButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await highlightElements(this.loc.previousButton);
+        }
     }
 
+    // Returns true if Next was already disabled when called (nothing to paginate through — the
+    // real signal is the `disabled` attribute, not a CSS "active" class, which never existed on
+    // the real button), false if it successfully paged forward at least once.
     async verifyNextButtonFunctionality() {
-        let activeTag = true;
-        while (await this.loc.nextButton.getAttribute('class').then(cls => cls && cls.includes('active'))) {
+        let stayedOnFirstPage = true;
+        while (!(await this.loc.nextButton.isDisabled().catch(() => true))) {
             await this.loc.nextButton.click();
             await this.page.waitForTimeout(1000);
-            activeTag = false;
+            stayedOnFirstPage = false;
         }
-        return activeTag;
+        return stayedOnFirstPage;
     }
 
     async toggleHambergerMenu() {

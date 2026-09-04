@@ -1,4 +1,5 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
+import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 
 // Global hook for clearing highlights
 // test.afterEach(async ({ signupUtils }) => {
@@ -16,25 +17,25 @@ export function runBuildABetSuite(test: typeof BetwayTest, screenshotDir: string
             await buildABetPage.navigateToBuildABet();
         });
 
-        // test('T1,T2,T3. Verify "Build A Bet" page UI and markets', async ({ page, buildABetPage }, testInfo) => {
-        //     await buildABetPage.clickRandomMarketButton();
-        //     await buildABetPage.highlightBuildABetTab();
-        //     await ScreenshotHelper(page, screenshotDir, 'build-a-bet-ui', testInfo);
-        // });
+        test('T1,T2,T3. Verify "Build A Bet" page UI and markets', async ({ page, buildABetPage }, testInfo) => {
+            await buildABetPage.clickRandomMarketButton();
+            await buildABetPage.highlightBuildABetTab();
+            await ScreenshotHelper(page, screenshotDir, 'build-a-bet-ui', testInfo);
+        });
 
-        // test('T4. Verify the info icon text content', async ({ page, buildABetPage }, testInfo) => {
-        //     await buildABetPage.highlightInfoMessages();
-        //     await ScreenshotHelper(page, screenshotDir, 'info-messages-highlighted', testInfo);
-        // });
+        test('T4. Verify the info icon text content', async ({ page, buildABetPage }, testInfo) => {
+            await buildABetPage.highlightInfoMessages();
+            await ScreenshotHelper(page, screenshotDir, 'info-messages-highlighted', testInfo);
+        });
 
-        // test('T5. Verify the info and favorite icons are clickable', async ({ page, buildABetPage }, testInfo) => {
-        //     await buildABetPage.clickFavorite();
-        //     await buildABetPage.clickInfo();
+        test('T5. Verify the info and favorite icons are clickable', async ({ page, buildABetPage }, testInfo) => {
+            await buildABetPage.clickFavorite();
+            await buildABetPage.clickInfo();
 
-        //     await buildABetPage.highlightFavorite();
-        //     await buildABetPage.highlightInfo();
-        //     await ScreenshotHelper(page, screenshotDir, 'info-favorite-icons', testInfo);
-        // });
+            await buildABetPage.highlightFavorite();
+            await buildABetPage.highlightInfo();
+            await ScreenshotHelper(page, screenshotDir, 'info-favorite-icons', testInfo);
+        });
 
         // test('T6,7,8. Verify expand-collapse icon for markets', async ({ page, buildABetPage }, testInfo) => {
         //     await buildABetPage.expandMarket(); // Expand

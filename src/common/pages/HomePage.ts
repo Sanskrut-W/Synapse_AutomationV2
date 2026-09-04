@@ -200,8 +200,15 @@ export class HomePage extends BasePage {
     async clickFooterPrivacyPolicy() {
         await this.safeActions.safeClick('PrivacyPolicy', this.loc.PrivacyPolicy);
         await this.page.waitForLoadState('domcontentloaded');
+        // The URL is the real success signal. Confirmed live on ZM: this page is an
+        // accordion/breadcrumb layout whose currently-active section reads "General", not a
+        // page-level "Privacy Policy" heading — best-effort highlight rather than a hard
+        // requirement, since regions where the heading text does hold still get it highlighted.
         await expect(this.page).toHaveURL(/.*privacy-policy.*/, { timeout: 15000 });
-        await highlightElementBorder(this.page.getByRole('heading', { name: 'Privacy Policy' }));
+        const heading = this.page.getByRole('heading', { name: 'Privacy Policy' });
+        if (await heading.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await highlightElementBorder(heading);
+        }
     }
 
     async clickPrivacyPolicyBackButton() {

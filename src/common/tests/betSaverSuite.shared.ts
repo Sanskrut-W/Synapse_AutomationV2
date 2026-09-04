@@ -37,6 +37,25 @@ export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string)
             await betSaverPage.clickDetailViewButton();
             await betSaverPage.verifyBetSaverTextVisibleInDetail();
             await betSaverPage.captureScreenshot('betSaverTextInDetail', screenshotDir, 'T9', testInfo);
+
+            // T13/T14 (REVERTED — confirmed live-failing on ZA): tried to check that a genuinely-active
+            // BetSaver bet still shows the BetSaver text once it moves from Open to Settled. The premise
+            // doesn't hold: a bet placed moments ago in THIS test run cannot have settled yet (real
+            // matches take hours/days), so "Settled Bets" only ever shows OTHER, unrelated bets already
+            // sitting in this shared demo account from earlier runs. The `noSettledBetsYet` guard only
+            // detects a fully-empty Settled tab — it can't detect "other bets are settled, but not this
+            // one" — so on any account with pre-existing settled history, clickDetailViewButton() opens
+            // an unrelated bet's Detail View, and that bet's BetSaver text is correctly absent, which
+            // just times out (confirmed live on ZA: 15s + reload + 15s retry, still hidden). There's no
+            // way to make this deterministic without a way to target the specific just-placed bet's row
+            // in the Settled list, which the UI doesn't expose. Same category as T33 (betslip) and the
+            // other reverted betSaver tests this session — reverting rather than shipping a flaky check.
+            // await betSaverPage.clickSettledBetsButton();
+            // const noSettledBetsYet = await page.getByText('There are no available bets for this account').isVisible({ timeout: 3000 }).catch(() => false);
+            // test.skip(noSettledBetsYet, 'Account has no settled bet history yet — nothing in Settled Bets for Detail View to act on');
+            // await betSaverPage.clickDetailViewButton();
+            // await betSaverPage.verifyBetSaverTextVisibleInDetail();
+            // await betSaverPage.captureScreenshot('betSaverTextInDetail', screenshotDir, 'T13-T14-settled', testInfo);
         });
 
         // T1: Verify Betsaver not active
@@ -46,7 +65,8 @@ export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string)
             await betSaverPage.captureScreenshot('betSaverNotActive', screenshotDir, 'T1', testInfo);
             await betSaverPage.deleteBetslipIfVisible();
         });
-        // T2-3: Betsaver Popup Flow
+        // T2-3, T6-7: Betsaver Popup Flow (T6-7 added: the info popup's own "Continue" button, and
+        // reopening the popup afterwards, had no coverage — T2-3 only ever opened it once).
         test('T2- Verify the Bet saver offer on betslip when it is active. T3-Verify the click functionality of "i" button and details  when Bet Saver is active', async ({ betSaverPage }, testInfo) => {
 
             await betSaverPage.setupBetsaverActive();
@@ -55,6 +75,14 @@ export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string)
             await betSaverPage.openBetsaverInfoPopup();
             await betSaverPage.takeScreenshot(screenshotDir, 'T3', testInfo);
 
+            // T6: "Continue" button inside the BetSaver info popup
+            await betSaverPage.clickContinueInBetsaverInfo();
+            await betSaverPage.takeScreenshot(screenshotDir, 'T6', testInfo);
+
+            // T7: reopening the info popup after Continue closed it
+            await betSaverPage.openBetsaverInfoPopup();
+            await betSaverPage.takeScreenshot(screenshotDir, 'T7-reopened', testInfo);
+            await betSaverPage.closePopup();
         });
 
         // T4-5: Betsaver gray out in My Bets
@@ -84,6 +112,21 @@ export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string)
             await betSaverPage.clickDetailViewButton();
             await betSaverPage.verifyBetSaverTextNotVisibleInDetail();
             await betSaverPage.takeScreenshot(screenshotDir, 'T5', testInfo);
+        });
+
+        // --- Below: ported from the old repo's modules/regression tier. Page object already had
+        // every method these need syntactically, but most were never actually live-verified before
+        // today — live-testing all 13 surfaced that the BetSaverPage class has more pre-existing
+        // locator rot than the static method-existence check could catch: smartPicksButton
+        // (`.flex > .col-span-6 > div:nth-child(4)`, used by 5 of these) and addToBetSlip
+        // (a literal string that was never a real regex) both confirmed 0 matches live, and
+        // selectOutrightBet's own multi-tab check doesn't hold for a genuinely single-leg outright
+        // bet. Only T20 (mixed-sport slip) came back clean — kept below. The rest are left out
+        // rather than shipped broken; fixing BetSaverPage's stale locators is a real, separate
+        // follow-up, not something to guess through here.
+        test('T20-Verify Betsaver is not active for a mixed-sport betslip.', async ({ betSaverPage }, testInfo) => {
+            await betSaverPage.selectSportBetForMixedSlip();
+            await betSaverPage.captureScreenshot('betSaverNotActive', screenshotDir, 'T20', testInfo);
         });
     });
 }

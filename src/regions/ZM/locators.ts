@@ -14,12 +14,20 @@ export const zmOverrides: RegionOverrides = {
         ResponsibleGaming: last(css('a[href="/responsible-gaming"]')),
         PrivacyPolicy: last(css('a[href="/sport/privacy-policy"]')),
         BettingRules: last(css('a[href*="BettingRules_ZM"]')),
+        // Confirmed live: ZM's real heading is the spelled-out "Frequently Asked Questions", same
+        // pattern already confirmed for GH/NG/MZ — the base assertion expects ZA's "FAQ's".
+        FAQHeading: text(/Frequently Asked Questions/i),
     },
     header: {
         bettingRules: text('Betting Rules'),
         // Confirmed live: ZM's profile avatar renders via a <feeds-avatar-image> custom element,
         // same as GH/TZ/NG — img[alt$="profile avatar"] never matches on ZM's site (0 DOM matches).
         accountsButton: first(css('feeds-avatar-image')),
+    },
+    howTo: {
+        // Confirmed live: ZM's How-To page says "How To Reset Password" — same wording already
+        // confirmed for GH/TZ/MW/NG/MZ, genuinely different from ZA's "How to reset your password".
+        howToResetPassword: first(text(/How To Reset Password/i)),
     },
     betslip: {
         // Confirmed live: ZM needs 3 legs to trigger Win Boost (see winBoostLegs() in

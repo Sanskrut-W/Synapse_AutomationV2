@@ -282,11 +282,13 @@ export class BetslipPage extends SportsPage {
     }
 
     async verifyCashBtnSingleNotVisible() {
-        await expect(this.loc.cashBtnSingle).toHaveCount(0);
+        // Confirmed live: the element (#single-cash-tab) still exists in the DOM for a user
+        // without freebet — it's just hidden, not absent. toHaveCount(0) was always too strict.
+        await expect(this.loc.cashBtnSingle).toBeHidden();
     }
 
     async verifyFreebetBtnSingleNotVisible() {
-        await expect(this.loc.freebetBtnSingle).toHaveCount(0);
+        await expect(this.loc.freebetBtnSingle).toBeHidden();
     }
 
     async verifyBetSaverTextVisible() {

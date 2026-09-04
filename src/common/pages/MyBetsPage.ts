@@ -13,7 +13,16 @@ export class MyBetsPage extends BasePage {
             closePromotionPopup: css('#modal-close-btn'),
             mobileInput: first(role('textbox', { name: 'Mobile Number' })),
             passwordInput: first(role('textbox', { name: 'Enter Password' })),
-            myBetsButton: first(text('My Bets')),
+            // Confirmed live on MW: an unscoped `first(text('My Bets'))` resolves to a hidden
+            // duplicate (4 total DOM matches, index 0 not visible) — the same class of ambiguous-
+            // text bug already fixed elsewhere this session. `.filter({visible: true})` picks the
+            // first VISIBLE match instead of the first DOM match, a strict improvement everywhere
+            // (regions with only one match, already visible, are unaffected). At the narrow/default
+            // viewport this framework runs headless with, MW additionally renders a mobile-style
+            // bottom tab bar where "My Bets" is a `<span>` inside a `cursor-pointer` wrapper div —
+            // confirmed live the actual click handler lives on that wrapper, not the text node
+            // itself, so resolve to the parent.
+            myBetsButton: (root) => root.getByText('My Bets').filter({ visible: true }).first().locator('xpath=..'),
             openBetsTab: first(text('Open Bets')),
             settledBetsTab: first(text('Settled Bets')),
             // Confirmed live on NG: unscoped, `first(text('Sports', {exact:true}))` does NOT
@@ -77,7 +86,37 @@ export class MyBetsPage extends BasePage {
         // when nothing is showing) but was previously only invoked right after goto()/Login() —
         // call it once more here, at the point this was actually observed live blocking My Bets.
         await this.closePromotionPopupIfVisible(3000);
-        await this.loc.myBetsButton.click();
+
+        // Fast path: a normal click works fine on every region confirmed so far except MW (ZA
+        // included — regressed once by unconditionally replacing this with the MW-specific
+        // workaround below; restored as the default, unchanged path for everyone else).
+        try {
+            await this.loc.myBetsButton.click({ timeout: 8000 });
+            return;
+        } catch {
+            // Fall through to the more defensive path below.
+        }
+
+        // Confirmed live on MW: a promo popup can appear several seconds INTO the click attempt —
+        // after the pre-check above already ran and found nothing — so one dismissal isn't always
+        // enough. Retry a few times, re-checking for a newly-appeared popup between attempts (same
+        // pattern already established in BetInfluencerModal's clickDismissingPromo()). Also
+        // confirmed live: Playwright's simulated mouse click on this element — even `force: true`,
+        // which does correctly locate and target it — never triggers the mobile bottom-tab bar's
+        // own click handler on MW (a Vue component quirk, not an actionability problem); a native
+        // DOM `.click()` via `evaluate()` does. Only reached when the fast path above has already
+        // failed, so this never changes behavior for a region where the normal click just works.
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            await this.closePromotionPopupIfVisible(2000);
+            try {
+                await this.loc.myBetsButton.waitFor({ state: 'visible', timeout: 5000 });
+                await this.loc.myBetsButton.evaluate((el: HTMLElement) => el.click());
+                await this.page.getByText('Open Bets').or(this.page.getByText('Settled Bets')).first().waitFor({ state: 'visible', timeout: 8000 });
+                return;
+            } catch (e) {
+                if (attempt === 3) throw e;
+            }
+        }
     }
 
     async clickOpenBetsTab() {

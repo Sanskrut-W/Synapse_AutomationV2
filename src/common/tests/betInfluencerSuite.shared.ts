@@ -64,20 +64,20 @@ export function runBetInfluencerSuite(test: typeof BetwayTest, screenshotDir: st
             await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T5-Detailed Breakdown page after Click', testInfo);
         });
 
-        // test('T6-Verify functionality of Month dropdown on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
-        //     await betinfluencerModal.gotoBetInfluencerModal();
-        //     await betinfluencerModal.clickDetailButton();
-        //     await highlightElements(betinfluencerModal.loc.monthsSelector);
-        //     await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
-        //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T6-Month dropdown before click', testInfo);
-        //     await betinfluencerModal.loc.monthsSelector.click();
-        //     await betinfluencerModal.page.keyboard.press('ArrowUp');
-        //     await betinfluencerModal.page.keyboard.press('Enter');
-        //     await betinfluencerModal.page.waitForTimeout(2000);
-        //     await highlightElements(betinfluencerModal.loc.monthsSelector);
-        //     await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
-        //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T6-Month dropdown after click', testInfo);
-        // });
+        test('T6-Verify functionality of Month dropdown on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
+            await betinfluencerModal.gotoBetInfluencerModal();
+            await betinfluencerModal.clickDetailButton();
+            await highlightElements(betinfluencerModal.loc.monthsSelector);
+            await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
+            await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T6-Month dropdown before click', testInfo);
+            await betinfluencerModal.loc.monthsSelector.click();
+            await betinfluencerModal.page.keyboard.press('ArrowUp');
+            await betinfluencerModal.page.keyboard.press('Enter');
+            await betinfluencerModal.page.waitForTimeout(2000);
+            await highlightElements(betinfluencerModal.loc.monthsSelector);
+            await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
+            await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T6-Month dropdown after click', testInfo);
+        });
 
         test('T7/New T-18/T19/T20 - Verify functionality of sort by dropdown on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
             test.setTimeout(1200000);
@@ -85,12 +85,12 @@ export function runBetInfluencerSuite(test: typeof BetwayTest, screenshotDir: st
             await betinfluencerModal.sortByDropDownFunctionalityChacek(screenshotDir, testInfo);
         });
 
-        // test('T8- Verify presence of Total Monthly Revenue on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
-        //     await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
-        //     await expect(betinfluencerModal.loc.totalMonthlyRevenue).toBeVisible();
-        //     await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
-        //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T8-Total Monthly Revenue presence', testInfo);
-        // });
+        test('T8- Verify presence of Total Monthly Revenue on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
+            await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
+            await expect(betinfluencerModal.loc.totalMonthlyRevenue).toBeVisible();
+            await highlightElements(betinfluencerModal.loc.totalMonthlyRevenue);
+            await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T8-Total Monthly Revenue presence', testInfo);
+        });
 
         test('T9-Verify Bets Taken inside Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
             await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
@@ -107,9 +107,9 @@ export function runBetInfluencerSuite(test: typeof BetwayTest, screenshotDir: st
         });
 
         test('T11/T12-Verify functionality of Sort Button on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
-            test.setTimeout(1200000);
             await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
-            await betinfluencerModal.sortByDropDownFunctionalityChacek(screenshotDir, testInfo);
+            await betinfluencerModal.verifyAndClickSortButton();
+            await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T11-T12-Sort Button', testInfo);
         });
 
         test('New-T11-Verify correct graphical representation of  "Last Four weeks" data .', async ({ betinfluencerModal }, testInfo) => {
@@ -129,23 +129,22 @@ export function runBetInfluencerSuite(test: typeof BetwayTest, screenshotDir: st
             await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'New-T21-Results count', testInfo);
         });
 
-        // const abcd=getFirstBookingCode();
+        // New T25 confirmed NOT working live: verifyBookingCodeDropDown() looks up
+        // `#${getFirstBookingCode()}` on this page, but that helper returns a code collected from
+        // the sports/odds pages (used elsewhere for the T17 share-booking-code flow), which doesn't
+        // match the id of any row actually rendered in this Details table — a real target/data
+        // mismatch, not a stale-locator issue. Needs the row lookup rescoped to a code that's
+        // actually present on THIS page before it can be re-enabled.
         // test('New T25-Verify "Booking code" Dropdown functionality on Details page inside Bet Influencer.', async ({ betinfluencerModal }, testInfo) => {
         //     await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
         //     await betinfluencerModal.verifyBookingCodeDropDown();
         //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'New-T25-Booking code dropdown before click', testInfo);
         // });
 
-        // Remove This test case
-        // test('New T26-Verify  "Share" booking code functionality on Result section inside Details Page from Bet Influencer.',async({ betinfluencerModal }, testInfo) => {
-        //     await betinfluencerModal.gotoBetInfluencerModal();
-        //     await betinfluencerModal.clickDetailButton();
-        //     await highlightElements(betinfluencerModal.page.locator(`#${abcd}`).getByRole('img').first());
-        //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'New-T25-Booking code dropdown before click', testInfo);
-        //     await betinfluencerModal.page.locator(`#${abcd}`).getByRole('img').first().click();
-        //     await betinfluencerModal.page.waitForTimeout(2000);
-        //     await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'New-T26-Share booking code popup', testInfo);
-        // });
+        // New T26 ("Share booking code") intentionally not ported: the original author left a
+        // "Remove This test case" note, and its `getFirstBookingCode()` call ran at module-load
+        // time (before any booking codes existed) rather than inside the test — never a working
+        // test, not just a disabled one.
 
         // Handled in Betslip??
         // test('New-T31-Verify "Social media" options presence and functionality on Bet confirmation pop up window.', async ({ sportsPage }, testInfo) => {
@@ -176,15 +175,18 @@ export function runBetInfluencerSuite(test: typeof BetwayTest, screenshotDir: st
         //     await ScreenshotHelper(sportsPage.page, screenshotDir, 'New T32-QR', testInfo)
         // });
 
-        // test('T13-Verify Previous/Next button functionality on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
-        //     await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
-        //     await betinfluencerModal.verifyNextButton(screenshotDir, testInfo);
-        //     const activeTag=await betinfluencerModal.verifyNextButtonFunctionality();
-        //     if(!activeTag){
-        //         await expect(betinfluencerModal.loc.previousButton).toContainClass('active');
-        //     }
-        //     await betinfluencerModal.verifyPreviousButton(screenshotDir, testInfo);
-        // });
+        test('T13-Verify Previous/Next button functionality on Details page inside bet influencer from Hamburger menu.', async ({ betinfluencerModal }, testInfo) => {
+            await betinfluencerModal.gotoDetailSectionBetInfluencerModal();
+            await betinfluencerModal.verifyNextButton(screenshotDir, testInfo);
+            const stayedOnFirstPage = await betinfluencerModal.verifyNextButtonFunctionality();
+            // Only meaningful to assert Previous appeared if we actually paged forward — with a
+            // single page of results (Next already disabled), there's nothing to page back from.
+            if (!stayedOnFirstPage) {
+                await expect(betinfluencerModal.loc.previousButton).toBeVisible();
+            }
+            await betinfluencerModal.verifyPreviousButton(screenshotDir, testInfo);
+            await ScreenshotHelper(betinfluencerModal.page, screenshotDir, 'T13-Previous-Next button', testInfo);
+        });
 
         // test('T16-Verify presence of "Booking Code" message on Bet Confirmation pop up window.', async ({ sportsPage }, testInfo) => {
         //     await sportsPage.page.setViewportSize({ width: 1300, height: 780 });

@@ -226,8 +226,9 @@ export class HeaderPage extends HomePage {
         if (!['GH', 'NG'].includes(activeRegion())) {
             await highlightElementBorder(this.loc.documentVerification);
         }
-        if (activeRegion() !== 'MW') {
-            // Confirmed live: MW's My Account panel has no "My Casino Big Win" option.
+        if (!['MW', 'MZ'].includes(activeRegion())) {
+            // Confirmed live: MW's and MZ's My Account panels have no "My Casino Big Win" option
+            // (MZ has no Casino product at all — confirmed absent from its main nav too).
             await highlightElementBorder(this.loc.MyCasinoBigWin);
         }
         await this.loc.promoVouchers.scrollIntoViewIfNeeded();
@@ -478,7 +479,25 @@ export class HeaderPage extends HomePage {
         // intercept this click, spinning through Playwright's actionability retries for the full
         // 60s timeout before ever giving up. Dismiss it first; safe no-op everywhere else.
         await this.closePromotionPopupIfVisible(3000);
-        await this.loc.accountsButton.click();
+        try {
+            await this.loc.accountsButton.click({ timeout: 8000 });
+            return;
+        } catch {
+            // Fall through — confirmed live on MZ: a second promo can appear (or the first
+            // one's dismiss animation can still be settling) right as this click fires, even
+            // though the pre-check above already ran and the element itself reports visible.
+            // Same "appears mid-attempt" class already handled in MyBetsPage.clickMyBets() —
+            // only reached when the fast path above has already failed.
+        }
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            await this.closePromotionPopupIfVisible(2000);
+            try {
+                await this.loc.accountsButton.click({ timeout: 5000 });
+                return;
+            } catch (e) {
+                if (attempt === 3) throw e;
+            }
+        }
     }
 
     async clickBalanceDropdown() {

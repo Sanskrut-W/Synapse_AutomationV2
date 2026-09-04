@@ -12,10 +12,10 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             await homePage.verifyFooterBetwayLogo();
             await ScreenshotHelper(homePage.page, screenshotDir, 'T2.png', testInfo);
         });
-        // test('T3-Verify that user should able to click on  "Betway" logo in footer', async ({ homePage }, testInfo) => {
-        //     await homePage.clickFooterBetwayLogo();
-        //     await ScreenshotHelper(homePage.page, screenshotDir, 'T3-a.png', testInfo);
-        // });
+        test('T3-Verify that user should able to click on  "Betway" logo in footer', async ({ homePage }, testInfo) => {
+            await homePage.clickFooterBetwayLogo();
+            await ScreenshotHelper(homePage.page, screenshotDir, 'T3-a.png', testInfo);
+        });
 
         test('T6-Verify that user should able to click on "Sponsorships" logo in footer', async ({ homePage }, testInfo) => {
             await homePage.clickArsenalLogo();
@@ -53,10 +53,10 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T32 b -Verify functionality of "Betting Rules" at footer section', async ({ homePage }, testInfo) => {
-            // Confirmed live: TZ's and MW's Betting Rules links both open an external PDF in a new
-            // tab (cms1.gmgamingsystems.com, target=_blank), not an in-app page like ZA's — the
-            // shared method's in-app URL assertion can never pass for either.
-            test.skip(['TZ', 'MW'].includes(activeRegion()), "This region's Betting Rules link opens an external PDF in a new tab, not an in-app page");
+            // Confirmed live: TZ's, MW's, MZ's, and ZM's Betting Rules links all open an external
+            // PDF in a new tab (cms1.gmgamingsystems.com, target=_blank), not an in-app page like
+            // ZA's — the shared method's in-app URL assertion can never pass for any of them.
+            test.skip(['TZ', 'MW', 'MZ', 'ZM'].includes(activeRegion()), "This region's Betting Rules link opens an external PDF in a new tab, not an in-app page");
             await homePage.clickBettingRulesLink();
             await ScreenshotHelper(homePage.page, screenshotDir, 'T32-b.png', testInfo);
         });
@@ -80,12 +80,14 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             // NG confirmed live too: its How-To page's full real tab list is How To Bet / Register /
             // Reset Password / Withdraw / Betgames / Casino / Deposit / "use your Free Bet" / "Build
             // a Bet" — 0 matches anywhere on the page for "SMS" in any form, so no such section exists.
-            test.skip(['TZ', 'GH', 'MW', 'NG'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            // Confirmed live: MZ's How-To page also has 0 matches for "SMS" anywhere.
+            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T39-b.png', testInfo);
         });
         test('T40-Verify that User should able to click on any option available on "How to SMS" section', async ({ howTo }, testInfo) => {
-            test.skip(['TZ', 'GH', 'MW', 'NG'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            // Confirmed live: MZ's How-To page also has 0 matches for "SMS" anywhere.
+            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T40.png', testInfo);
         });
@@ -100,7 +102,9 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             // Betgames as a product, but its How-To page simply has no dedicated tab for it (0
             // matches on the real 8-tab list: Bet/Cash-out/Register/Reset Password/Jackpots/Withdraw/Casino/Deposit).
             // MW's How-To page has no such tab either (0 matches on its own real 5-tab list).
-            test.skip(['TZ', 'GH', 'MW'].includes(activeRegion()), 'No "How To Betgames" section on this region\'s How-To page');
+            // Confirmed live: MZ offers Betgames as a product (it's in MZ's own main nav), but
+            // like GH/MW its How-To page has no dedicated tab for it (0 matches).
+            test.skip(['TZ', 'GH', 'MW', 'MZ'].includes(activeRegion()), 'No "How To Betgames" section on this region\'s How-To page');
             await howTo.clickHowToBetgames();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T43.png', testInfo);
         });

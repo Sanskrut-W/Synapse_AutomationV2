@@ -32,9 +32,11 @@ const NAV_ITEMS_BY_REGION: Record<string, string[]> = {
     ],
     MZ: [
         // Confirmed live: MZ has an entirely different product set from ZA — no Casino/Slots/Crash/
-        // Live Casino/Quick Games at all, but has Instant Games/Betgames/Virtuals instead.
+        // Live Casino/Quick Games at all, but has Instant Games/Betgames instead. Re-verified live:
+        // "virtuals" is no longer in this list — it doesn't currently exist on MZ's real nav
+        // (9 items now, not 10), causing TC_BL_11/TC_HP_08 to fail waiting for it.
         'home', 'sport', 'live', 'aviator', 'instant games',
-        'lucky numbers', 'betgames', 'esports', 'virtuals', 'promotions',
+        'lucky numbers', 'betgames', 'esports', 'promotions',
     ],
     NG: [
         // Confirmed live: NG has Lucky Numbers (unlike GH) but no Horse Racing/Soccer Tote (unlike ZA).

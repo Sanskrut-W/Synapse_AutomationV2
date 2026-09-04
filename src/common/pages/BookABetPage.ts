@@ -15,7 +15,11 @@ export class BookABetPage extends BasePage {
             loginButton: first(role('button', { name: 'Login' })),
             bookABet: first(role('button', { name: 'Codesicon' })),
             bookABetSearch: first(role('textbox', { name: 'Search', exact: true })),
-            bookABetSearchIcon: first(css('form img')),
+            // Confirmed live: the search icon is an inline <svg> (a magnifying-glass path), not an
+            // <img> — "form img" never matched anything. A bare "form svg" isn't enough either: the
+            // header has its own hidden search form earlier in DOM order, so an unscoped `.first()`
+            // grabbed that instead — scope to the ancestor form of the real search textbox.
+            bookABetSearchIcon: (root) => root.getByRole('textbox', { name: 'Search', exact: true }).first().locator('xpath=ancestor::form[1]//svg').first(),
             sortByOdds: xpath("//span[contains(@aria-label,'Bets Taken')]/div"),
             arrowFilter: css('.flex.w-8.h-8.p-1'),
             sportButton: first(role('link', { name: 'Sport Sport' })),
