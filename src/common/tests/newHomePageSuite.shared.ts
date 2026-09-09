@@ -150,7 +150,8 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
                 // both before and after scrolling to the bottom): zero "partner"/"official"/"global"
                 // matches anywhere in document.body.innerText — this branding genuinely doesn't
                 // exist on NG's homepage either.
-                test.skip(['GH', 'MW', 'MZ', 'TZ', 'NG'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
+                // ZM confirmed live too (same body-text scan, case-insensitive "partner"): zero matches.
+                test.skip(['GH', 'MW', 'MZ', 'TZ', 'NG', 'ZM'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
                 await home.verifyPartnerBranding();
                 await ScreenshotHelper(page, screenshotDir, 'TC_BL_18-partner-branding.png', testInfo);
             });

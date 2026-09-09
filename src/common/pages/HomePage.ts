@@ -336,7 +336,9 @@ export class HomePage extends BasePage {
 
     async clickPlayAviatorLink() {
         await this.safeActions.safeClick('PlayAviator', this.loc.PlayAviator);
-        await expect(this.page).toHaveURL(/.*aviator*/, { timeout: 15000 });
+        // Confirmed live on ZM: the URL segment can be mixed-case ('/Aviator', a different, older
+        // URL structure than ZA's lowercase '/aviator') — case-insensitive so both match.
+        await expect(this.page).toHaveURL(/.*aviator*/i, { timeout: 15000 });
         await this.page.waitForLoadState('domcontentloaded');
     }
 

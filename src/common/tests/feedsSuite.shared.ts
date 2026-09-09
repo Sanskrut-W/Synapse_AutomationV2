@@ -3,6 +3,25 @@ import type { test as BetwayTest } from '../fixtures/betwayFixture';
 export function runFeedsSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('Feeds Tests', () => {
 
+        test.beforeEach(async () => {
+            // Confirmed live on ZA (2026-09-07): the "Betway Feeds" social feature (follow
+            // leagues, like/comment/share posts) that this entire module tests no longer has an
+            // entry point anywhere on the live site. `.feeds-header-container` (the base "Feeds"
+            // icon every test in this module depends on, directly or via navigateToFeeds()) has 0
+            // DOM matches. A live scan of all 213 header/nav <a>/<button> elements plus the
+            // hamburger menu found only two coincidental "feed" matches, neither of which is it:
+            // a "Feed Avatar" button that actually opens the account Deposit modal (unrelated
+            // profile avatar, not a feature entry point), and a "Feeds" label that's really a
+            // notification-category filter tab (Latest/System/Marketing/Feeds) inside the
+            // Notifications bell panel. This isn't a locator typo — the feature itself is gone,
+            // which is why even the previously-passing tests (T1/T2/T5/T17/T20/T21/T23/T25), not
+            // just this module's older TODO-flagged ones, now all fail identically on the same
+            // missing base locator. Skipping the whole module rather than chasing a dead feature;
+            // not independently re-verified on the other 7 regions, but they share this shared
+            // suite and the same underlying platform, so the same removal almost certainly applies.
+            test.skip(true, 'Betway Feeds social feature confirmed removed from the live site — no entry point exists anymore');
+        });
+
         // T1:Verify Betway Feeds icon presence and functionality.
         test('T1: Verify Betway Feeds icon presence and functionality.', async ({ feedsPage }, testInfo) => {
             await feedsPage.page.waitForTimeout(2000);

@@ -42,13 +42,14 @@ export function runTransactionHistorySuite(test: typeof BetwayTest, screenshotDi
         });
 
         // T4: Verify user is able to search transaction by entering start and date in calendar on transaction History page.
-        // TODO: fix — failing in ZA smoke run (2026-07-07, ~2.8m). Commented out temporarily.
-        // test('T4-Verify user is able to search transaction by entering start and date in calendar on transaction History page.', async ({ transactionHistoryPage }, testInfo) => {
-        //     await transactionHistoryPage.navigateToTransactionHistory();
-        //     await transactionHistoryPage.clickDatePicker();
-        //     await transactionHistoryPage.captureScreenshot('dateDialog', screenshotDir, 'T4-TransactionHistory_Calendar', testInfo);
-        //     await transactionHistoryPage.closePopupIfVisible();
-        // });
+        // Re-verified live (2026-09-07): root cause was `datePicker`'s locator being double-wrapped
+        // (always 0 matches) — fixed in TransactionHistoryPage.ts.
+        test('T4-Verify user is able to search transaction by entering start and date in calendar on transaction History page.', async ({ transactionHistoryPage }, testInfo) => {
+            await transactionHistoryPage.navigateToTransactionHistory();
+            await transactionHistoryPage.clickDatePicker();
+            await transactionHistoryPage.captureScreenshot('dateDialog', screenshotDir, 'T4-TransactionHistory_Calendar', testInfo);
+            await transactionHistoryPage.closePopupIfVisible();
+        });
 
         // T5:Verify Export button functionality on transaction history page
         test('T5-Verify Export button functionality on transaction history page', async ({ transactionHistoryPage }, testInfo) => {

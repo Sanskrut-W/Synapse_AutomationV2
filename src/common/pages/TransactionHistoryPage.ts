@@ -27,11 +27,11 @@ export class TransactionHistoryPage extends BasePage {
 
             accountMain: css('#my-account-main'),
 
-            // Old resolver chained a SECOND .nth(1) on top of the Excel row's own .nth(0), which
-            // narrows the locator to a single element and then re-indexes into it — an
-            // out-of-bounds, effectively broken lookup. Preserved verbatim rather than "fixed" to
-            // a single .nth(1).
-            datePicker: at(at(css('#date'), 0), 1),
+            // FIXED (was double-wrapped: at(at(css('#date'), 0), 1) chains .nth(1) on TOP of an
+            // already-.nth(0)-narrowed single-element locator — out-of-bounds, always 0 matches.
+            // Confirmed live: #date has 2 real matches (start/end date inputs); nth(1) — the end
+            // date field — is the one that actually opens the "Choose Date" dialog on click.
+            datePicker: at(css('#date'), 1),
             dateDialog: role('dialog', { name: 'Choose Date' }),
 
             // Neither was scoped to a single row — with only 0-1 transactions on an account these
@@ -157,7 +157,11 @@ export class TransactionHistoryPage extends BasePage {
     }
 
     async clickDatePicker() {
-        await this.loc.datePicker.click();
+        // Confirmed live on GH/NG/MZ/TZ/MW: an unrelated promo popup ("EPL Leaderboard...") can
+        // render centered over the panel, covering the date picker specifically (other controls
+        // like the tabs sit outside its footprint) — same recurring issue clickTransactionTab
+        // already handles via clickDismissingPromo, reused here for the same reason.
+        await this.clickDismissingPromo(this.loc.datePicker);
         await this.page.waitForTimeout(1000);
     }
 

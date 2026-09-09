@@ -157,11 +157,16 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             await ScreenshotHelper(homePage.page, screenshotDir, 'T61.png', testInfo);
         });
 
-        // TODO: fix — failing in ZA smoke run (2026-07-07, ~2.5m). Commented out temporarily.
-        // test('T62-Verify functionality of "Play Aviator" button at the Footer section', async ({ homePage }, testInfo) => {
-        //     await homePage.clickPlayAviatorLink();
-        //     await ScreenshotHelper(homePage.page, screenshotDir, 'T62.png', testInfo);
-        // });
+        // Re-verified live (2026-09-07) on ZA/ZM/GH/NG/MZ/TZ: passes — the 2026-07-07 failure was
+        // transient (timing/environmental at the time), not a real defect. ZM needed its own locator
+        // override (an older, mixed-case URL — see regions/ZM/locators.ts) and the assertion needed a
+        // case-insensitive regex (HomePage.ts) to match it. MW confirmed to genuinely have no Aviator
+        // link/text anywhere on the page (0 matches for any "aviator" href or text) — skipped.
+        test('T62-Verify functionality of "Play Aviator" button at the Footer section', async ({ homePage }, testInfo) => {
+            test.skip(activeRegion() === 'MW', 'MW has no Play Aviator link anywhere on the site');
+            await homePage.clickPlayAviatorLink();
+            await ScreenshotHelper(homePage.page, screenshotDir, 'T62.png', testInfo);
+        });
 
         test('T63-Verify functionality of "Sitemap" button at the Footer section', async ({ homePage }, testInfo) => {
             await homePage.clickSitemapLink();

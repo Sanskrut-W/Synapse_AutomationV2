@@ -34,7 +34,11 @@ export class GamingLobbyPage extends HeaderPage {
             promotionsInCasino: xpath("//img[@alt='/Betway/South-Africa/SA_Hacksaw_LeBandit_DeulAtDawn_NewGames/']"),
             casinoSearch: css('#casino-search'),
             mostLikedFilter: text('Most Liked'),
-            gameDiv: xpath('//*[@id="tab"]/div/div[1]/div/div[2]/div/div/div/div[1]/div[1]'),
+            // FIXED (was a positional xpath, '//*[@id="tab"]/div/.../div[1]', confirmed 0 live
+            // matches after a lobby layout change). Confirmed live: every game tile wraps a real,
+            // stable `a[href*="/lobby/casino-games/game/"]` Play link — anchoring on the first one's
+            // container div is robust to layout/position changes in a way an absolute xpath isn't.
+            gameDiv: (root) => root.locator('a[href*="/lobby/casino-games/game/"]').first().locator('xpath=ancestor::div[1]'),
             playButton: text('Play'),
             favouriteButton: role('button', { name: 'Favourite Game' }),
             betGames: css("a[href='/lobby/betgames']"),
@@ -62,7 +66,9 @@ export class GamingLobbyPage extends HeaderPage {
     }
 
     async selectFilter(filterKey: string) {
-        await this.loc[filterKey].click();
+        // Confirmed live: "Most Liked" now matches 5 elements (repeated across sections/carousels),
+        // a strict-mode violation on a bare .click() — .first() is the real, clickable nav filter.
+        await this.loc[filterKey].first().click();
     }
 
     async launchGame(gameDivKey: string) {

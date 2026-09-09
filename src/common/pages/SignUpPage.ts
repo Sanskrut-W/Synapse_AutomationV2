@@ -213,6 +213,20 @@ export class SignUpPage extends BasePage {
             return;
         }
 
+        if (activeRegion() === 'ZM') {
+            // Confirmed live (full DOM dump of the Sign Up modal): ZM's signup form is a FIFTH
+            // variant — a SINGLE STEP like TZ's/NG's (no "Next"/"Continue", Register is right
+            // here), but unlike TZ it DOES have FirstName/LastName/DateOfBirth fields (labeled
+            // literally "FirstName"/"LastName", no space, same style as its own "MobileNumber" —
+            // see the signUp overrides in regions/ZM/locators.ts) plus an optional ReferralCode
+            // field and no Email or ID-number field at all.
+            await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
+            await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
+            await this.selectDateOfBirth();
+            await this.loc.ageCheckbox.check();
+            return;
+        }
+
         await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
         await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
 

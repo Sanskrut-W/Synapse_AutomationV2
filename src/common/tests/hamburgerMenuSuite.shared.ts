@@ -55,8 +55,8 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             test('27-Verify My Casino Big Win option functionality', async ({ hamburgerMenuPage }, testInfo) => {
                 // Confirmed live: MW's and MZ's My Account panels have no "My Casino Big Win"
                 // option at all (MZ has no Casino product at all — confirmed absent from its main
-                // nav too).
-                test.skip(['MW', 'MZ'].includes(activeRegion()), 'This region has no "My Casino Big Win" option in My Account');
+                // nav too). ZM confirmed absent too (0 matches for the text anywhere on the page).
+                test.skip(['MW', 'MZ', 'ZM'].includes(activeRegion()), 'This region has no "My Casino Big Win" option in My Account');
                 await hamburgerMenuPage.verifyAndClickMyCasinoBigWin();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'CasinoBigWin.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -130,7 +130,8 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
                 // Profile, My Bets, Bonus Summary, Transaction History, Responsible Gaming, My
                 // Casino Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Live Chat, Log
                 // Out — no Betway Benefits (and no Document Verification either, handled above).
-                test.skip(['MW', 'MZ', 'TZ', 'NG'].includes(activeRegion()), 'This region has no "Betway Benefits" option in My Account');
+                // ZM confirmed absent too (0 matches for the text anywhere on the page).
+                test.skip(['MW', 'MZ', 'TZ', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Betway Benefits" option in My Account');
                 await hamburgerMenuPage.verifyAndClickBetwayBenefits();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'BetwayBenefits.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -199,13 +200,15 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
             await ScreenshotHelper(headerPage.page, screenshotDir, 'T6-BetwayScoresApp2.png', testInfo);
         });
 
-        // TODO: fix — failing in ZA smoke run (2026-07-07, ~31.9s). Commented out temporarily.
-        // test('8-Verify How to is visible and clickable in Hamburger Menu', async ({ headerPage }, testInfo) => {
-        //     await headerPage.verifyHowToOption();
-        //     await ScreenshotHelper(headerPage.page, screenshotDir, 'T8-HowTo.png', testInfo);
-        //     await headerPage.clickHowTo();
-        //     await ScreenshotHelper(headerPage.page, screenshotDir, 'T8-HowTo2.png', testInfo);
-        // });
+        // Re-verified live (2026-09-07): the real failure was a strict-mode violation (a hidden
+        // duplicate "How To Bet" link) plus a false-positive pointer-interception on click — both
+        // fixed in HeaderPage.ts (loc.howTo now uses first(), clickHowTo() force-clicks).
+        test('8-Verify How to is visible and clickable in Hamburger Menu', async ({ headerPage }, testInfo) => {
+            await headerPage.verifyHowToOption();
+            await ScreenshotHelper(headerPage.page, screenshotDir, 'T8-HowTo.png', testInfo);
+            await headerPage.clickHowTo();
+            await ScreenshotHelper(headerPage.page, screenshotDir, 'T8-HowTo2.png', testInfo);
+        });
 
         // test('9-Verify Responsible gaming is visible and clickable in Hamburger Menu', async ({ headerPage }, testInfo) => {
         //     await headerPage.verifyResponsibleGamingOption();

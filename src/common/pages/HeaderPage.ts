@@ -90,7 +90,10 @@ export class HeaderPage extends HomePage {
             allBalanceTxt: text('All Balances'),
             allBalanceFieldHamburger: xpath('//*[@id="__nuxt"]/div/div[1]/div[2]/div[1]/div[1]/div[2]'),
             liveChatIcon: css('a[href="/sport/soccer?livechat=true"] svg'),
-            howTo: (root) => root.locator('a[href="/how-to-bet"]').locator('..'),
+            // Confirmed live: the hamburger panel now renders a second, hidden `a[href="/how-to-bet"]`
+            // duplicate (a leftover/alternate menu rendering) alongside the real visible one, so the
+            // bare selector is a strict-mode violation — first() picks the real, visible one.
+            howTo: first((root) => root.locator('a[href="/how-to-bet"]').locator('..')),
         }) };
     }
 
@@ -226,9 +229,10 @@ export class HeaderPage extends HomePage {
         if (!['GH', 'NG'].includes(activeRegion())) {
             await highlightElementBorder(this.loc.documentVerification);
         }
-        if (!['MW', 'MZ'].includes(activeRegion())) {
+        if (!['MW', 'MZ', 'ZM'].includes(activeRegion())) {
             // Confirmed live: MW's and MZ's My Account panels have no "My Casino Big Win" option
-            // (MZ has no Casino product at all — confirmed absent from its main nav too).
+            // (MZ has no Casino product at all — confirmed absent from its main nav too). ZM
+            // confirmed absent too (0 matches for the text anywhere on the page).
             await highlightElementBorder(this.loc.MyCasinoBigWin);
         }
         await this.loc.promoVouchers.scrollIntoViewIfNeeded();
@@ -322,6 +326,13 @@ export class HeaderPage extends HomePage {
 
     // ── Click Methods - Hamburger Menu ───────────────────────────────────────
     async clickHamburgerMenu() {
+        // Confirmed live on ZM: a promo popup (e.g. "EPL Leaderboard") can still be open at this
+        // point — not just a visual overlay but one that appears to block the hamburger sidebar
+        // from actually opening at the application level (its content never mounts, so a later
+        // scrollIntoViewIfNeeded on a menu item times out waiting for something that was never
+        // rendered, not just covered). Dismiss defensively first; short timeout since most of the
+        // time nothing is there and this shouldn't slow down every other call site.
+        await this.closePromotionPopupIfVisible(2000);
         // Confirmed live on MW: a full-screen backdrop overlay can sit on top of an otherwise
         // visible/enabled/stable hamburger icon (a benign z-index quirk, not an actual blocker —
         // Playwright's own actionability checks confirm the icon itself is fine), causing the
@@ -365,7 +376,12 @@ export class HeaderPage extends HomePage {
     }
 
     async clickHowTo() {
-        await this.loc.howTo.click();
+        // Confirmed live: Playwright's hit-test reports "<span>Responsible Gaming</span> ...
+        // intercepts pointer events" here even though the two items' real bounding boxes don't
+        // overlap at all (~96px apart) — a false positive from this being far down a long
+        // scrollable sidebar. A raw DOM .click() (bypassing Playwright's hit-test) navigates
+        // correctly every time, so force is the correct fix here, not a real click-blocking bug.
+        await this.loc.howTo.click({ force: true });
     }
 
     // ── Login Methods ────────────────────────────────────────────────────────
