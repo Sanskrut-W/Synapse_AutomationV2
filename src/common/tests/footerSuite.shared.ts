@@ -80,14 +80,17 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             // NG confirmed live too: its How-To page's full real tab list is How To Bet / Register /
             // Reset Password / Withdraw / Betgames / Casino / Deposit / "use your Free Bet" / "Build
             // a Bet" — 0 matches anywhere on the page for "SMS" in any form, so no such section exists.
-            // Confirmed live: MZ's How-To page also has 0 matches for "SMS" anywhere.
-            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            // Confirmed live: MZ's How-To page also has 0 matches for "SMS" anywhere. Confirmed
+            // live (2026-10-12): BW's real tab list is exactly How To Bet / Reset Password /
+            // Register / Deposit / Withdraw — 5 tabs, same as MW's, no SMS tab either.
+            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM', 'BW'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T39-b.png', testInfo);
         });
         test('T40-Verify that User should able to click on any option available on "How to SMS" section', async ({ howTo }, testInfo) => {
-            // Confirmed live: MZ's How-To page also has 0 matches for "SMS" anywhere.
-            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
+            // Confirmed live: MZ's and BW's How-To pages also have 0 matches for "SMS" anywhere
+            // (see T39 above).
+            test.skip(['TZ', 'GH', 'MW', 'NG', 'MZ', 'ZM', 'BW'].includes(activeRegion()), 'No "How To Bet SMS" section on this region\'s How-To page');
             await howTo.clickHowToSMS();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T40.png', testInfo);
         });
@@ -103,8 +106,9 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
             // matches on the real 8-tab list: Bet/Cash-out/Register/Reset Password/Jackpots/Withdraw/Casino/Deposit).
             // MW's How-To page has no such tab either (0 matches on its own real 5-tab list).
             // Confirmed live: MZ offers Betgames as a product (it's in MZ's own main nav), but
-            // like GH/MW its How-To page has no dedicated tab for it (0 matches).
-            test.skip(['TZ', 'GH', 'MW', 'MZ'].includes(activeRegion()), 'No "How To Betgames" section on this region\'s How-To page');
+            // like GH/MW its How-To page has no dedicated tab for it (0 matches). Confirmed live
+            // (2026-10-12): BW's real 5-tab list (see T39 above) has no Betgames tab either.
+            test.skip(['TZ', 'GH', 'MW', 'MZ', 'BW'].includes(activeRegion()), 'No "How To Betgames" section on this region\'s How-To page');
             await howTo.clickHowToBetgames();
             await ScreenshotHelper(howTo.page, screenshotDir, 'T43.png', testInfo);
         });
@@ -130,6 +134,11 @@ export function runFooterSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T57-Verify functionality of "Affiliate Program" button at the Footer section', async ({ homePage }, testInfo) => {
+            // Confirmed live (2026-10-12): BW's footer has no Affiliate Program link at all — a
+            // full dump of every footer link found Contact Us/Betway Scores App/How To Bet/FAQ/
+            // Terms/Sponsorships/Betway App/Responsible Gaming/Privacy Policy/Play Aviator/Sitemap/
+            // Betting Rules, nothing affiliate- or partner-related anywhere on the page.
+            test.skip(activeRegion() === 'BW', 'No Affiliate Program link in this region\'s footer');
             await homePage.verifyAffiliateProgram();
             await ScreenshotHelper(homePage.page, screenshotDir, 'T57-a.png', testInfo);
         });

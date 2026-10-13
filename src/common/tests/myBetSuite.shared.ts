@@ -57,7 +57,9 @@ export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
             test('T5. Verify category dropdown options in Open Bets', async ({ page, myBetsPage }, testInfo) => {
                 // Confirmed live: TZ's My Bets category dropdown has no Betgames/Betway Jackpots
                 // options at all (TZ doesn't offer those products — its main nav lacks them too).
-                test.skip(activeRegion() === 'TZ', 'Betgames/Betway Jackpots categories do not exist for TZ');
+                // Confirmed live (2026-10-12): BW's dropdown is the same shape — only "All" and
+                // "Sports", no Betgames/Betway Jackpots options either.
+                test.skip(['TZ', 'BW'].includes(activeRegion()), 'Betgames/Betway Jackpots categories do not exist for this region');
                 await myBetsPage.selectCategory('Betgames');
                 await ScreenshotHelper(page, screenshotDir, 'open-bets-cat-betgames', testInfo);
 

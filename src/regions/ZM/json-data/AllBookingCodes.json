@@ -6,27 +6,7 @@
       "size": 20,
       "hasNextPage": false,
       "hasPreviousPage": false,
-      "result": [
-        {
-          "bookingCode": "BW6E62AB93",
-          "accountId": "4d14934e-241d-4a57-fc19-08dd2073fd12",
-          "referenceId": "2e39918d-6ac6-426d-938c-7c6fde0beba3",
-          "currencyCode": "ZMW",
-          "createdDate": "2026-09-03T13:29:48.78",
-          "activeUntilDate": "2027-09-03T13:29:46.747",
-          "cumulativeWagerAmount": 5,
-          "amountEarned": 0.2,
-          "amountPaid": 0.2,
-          "lastPayoutDate": "2026-09-03T14:15:03.537",
-          "timesUsed": 1,
-          "lastPayoutTimesUsedStamp": 0,
-          "id": "2a8afde2-6c18-4c46-a36d-2f04edb272db",
-          "editedById": "00000000-0000-0000-0000-000000000000",
-          "editedDateTime": "0001-01-01T00:00:00",
-          "isDeleted": false,
-          "version": 0
-        }
-      ]
+      "result": []
     }
   ]
 }

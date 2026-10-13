@@ -31,12 +31,14 @@ export function runSignUpSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T5-Register Button (Step 2 Entry)', async ({ signupPage }, testInfo) => {
-            if (activeRegion() === 'GH' || activeRegion() === 'NG') {
+            if (['GH', 'NG', 'BW'].includes(activeRegion())) {
                 // GH's "Step 2" is a mandatory OTP/SMS verification screen, not the ID/Passport step
                 // ZA has — there is no "Register" button here at all. Confirmed live: NG's single-step
                 // form (see fillBasicInfo's NG branch) reaches this exact same OTP screen after its
-                // "Continue" submit — also with no "Register" button anywhere. Confirm the OTP screen
-                // was reached and stop; there's no way to read the real SMS code sent to the test number.
+                // "Continue" submit — also with no "Register" button anywhere. Confirmed live (2026-10-12):
+                // BW's Step 1 is byte-for-byte the same mobile-only-then-OTP flow as NG's, reaching the
+                // identical OTP screen. Confirm the OTP screen was reached and stop; there's no way to
+                // read the real SMS code sent to the test number.
                 await signupPage.verifyOtpScreenReached();
                 await ScreenshotHelper(signupPage.page, screenshotDir, 'T5-signup-step2', testInfo);
                 return;
@@ -49,9 +51,9 @@ export function runSignUpSuite(test: typeof BetwayTest, screenshotDir: string) {
         });
 
         test('T7-Register Button (Step 2 Full)', async ({ signupPage, testData }, testInfo) => {
-            if (activeRegion() === 'GH' || activeRegion() === 'NG') {
-                // Same OTP blocker as T5 — GH and NG (confirmed live) have no ID field or Register
-                // button to fill/click here, only the OTP screen reached after their single Step 1.
+            if (['GH', 'NG', 'BW'].includes(activeRegion())) {
+                // Same OTP blocker as T5 — GH, NG and BW (all confirmed live) have no ID field or
+                // Register button to fill/click here, only the OTP screen reached after their single Step 1.
                 await signupPage.verifyOtpScreenReached();
                 await ScreenshotHelper(signupPage.page, screenshotDir, 'T7-signup', testInfo);
                 return;

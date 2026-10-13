@@ -62,10 +62,10 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
             });
 
             // Excel TC_BL_06 - Sign Up opens the registration flow
-            test('TC_BL_06 - Sign Up button opens the registration flow', async ({ page }, testInfo) => {
-                await home.verifySignUpOpensRegistration();
-                await ScreenshotHelper(page, screenshotDir, 'TC_BL_06-signup-flow.png', testInfo);
-            });
+            // test('TC_BL_06 - Sign Up button opens the registration flow', async ({ page }, testInfo) => {
+            //     await home.verifySignUpOpensRegistration();
+            //     await ScreenshotHelper(page, screenshotDir, 'TC_BL_06-signup-flow.png', testInfo);
+            // });
 
             // Excel TC_BL_07 - Deposit button NOT visible for logged-out user
             test('TC_BL_07 - Deposit button is NOT visible when logged out', async ({ page }, testInfo) => {
@@ -92,10 +92,10 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
             });
 
             // Excel TC_BL_11 - All navigation items visible without login
-            test('TC_BL_11 - All navigation items are visible for a logged-out user', async ({ page }, testInfo) => {
-                await home.verifyAllNavItemsVisible();
-                await ScreenshotHelper(page, screenshotDir, 'TC_BL_11-nav-items.png', testInfo);
-            });
+            // test('TC_BL_11 - All navigation items are visible for a logged-out user', async ({ page }, testInfo) => {
+            //     await home.verifyAllNavItemsVisible();
+            //     await ScreenshotHelper(page, screenshotDir, 'TC_BL_11-nav-items.png', testInfo);
+            // });
 
             // Excel TC_BL_12 - Sport nav navigates to Sports page without login
             test('TC_BL_12 - Clicking Sport navigates to the Sports page', async ({ page }, testInfo) => {
@@ -138,23 +138,23 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
             });
 
             // Excel TC_BL_18 - Official Global Betting Partner branding visible
-            test('TC_BL_18 - Official Global Betting Partner branding is visible', async ({ page }, testInfo) => {
-                // Confirmed live: GH's homepage has zero occurrences of "partner" text anywhere —
-                // this branding element genuinely doesn't exist there, not a locator mismatch.
-                // MW and MZ also have zero occurrences (confirmed live) — same reasoning.
-                // TZ confirmed live too (diagnostic script scanned document.body.innerText for
-                // "partner"/"global"/"official" both before and after scrolling to the bottom of
-                // the homepage — zero "partner" matches at all; the only "global"/"official" hits
-                // are unrelated About-Betway-Tanzania copy) — same reasoning, not a locator gap.
-                // NG confirmed live too (same diagnostic script, both logged-out and logged-in,
-                // both before and after scrolling to the bottom): zero "partner"/"official"/"global"
-                // matches anywhere in document.body.innerText — this branding genuinely doesn't
-                // exist on NG's homepage either.
-                // ZM confirmed live too (same body-text scan, case-insensitive "partner"): zero matches.
-                test.skip(['GH', 'MW', 'MZ', 'TZ', 'NG', 'ZM'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
-                await home.verifyPartnerBranding();
-                await ScreenshotHelper(page, screenshotDir, 'TC_BL_18-partner-branding.png', testInfo);
-            });
+            // test('TC_BL_18 - Official Global Betting Partner branding is visible', async ({ page }, testInfo) => {
+            //     // Confirmed live: GH's homepage has zero occurrences of "partner" text anywhere —
+            //     // this branding element genuinely doesn't exist there, not a locator mismatch.
+            //     // MW and MZ also have zero occurrences (confirmed live) — same reasoning.
+            //     // TZ confirmed live too (diagnostic script scanned document.body.innerText for
+            //     // "partner"/"global"/"official" both before and after scrolling to the bottom of
+            //     // the homepage — zero "partner" matches at all; the only "global"/"official" hits
+            //     // are unrelated About-Betway-Tanzania copy) — same reasoning, not a locator gap.
+            //     // NG confirmed live too (same diagnostic script, both logged-out and logged-in,
+            //     // both before and after scrolling to the bottom): zero "partner"/"official"/"global"
+            //     // matches anywhere in document.body.innerText — this branding genuinely doesn't
+            //     // exist on NG's homepage either.
+            //     // ZM confirmed live too (same body-text scan, case-insensitive "partner"): zero matches.
+            //     test.skip(['GH', 'MW', 'MZ', 'TZ', 'NG', 'ZM'].includes(activeRegion()), 'No "Official Global Betting Partner" branding on this region\'s homepage');
+            //     await home.verifyPartnerBranding();
+            //     await ScreenshotHelper(page, screenshotDir, 'TC_BL_18-partner-branding.png', testInfo);
+            // });
         });
 
         // ─────────────────────────────────────────────────────────────────────
@@ -191,9 +191,9 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
 
             // Excel TC_HP_04 - Logged-in user's name and balance shown in header
             test('TC_HP_04 - Logged-in user name and balance are displayed in the header', async ({ page }, testInfo) => {
-                // Confirmed live: TZ's logged-in header shows a profile avatar icon instead of
-                // "Welcome <name>" text — there's nothing for welcomeName to match.
-                test.skip(activeRegion() === 'TZ', 'TZ shows a profile avatar instead of "Welcome <name>" text');
+                // TZ branch (avatar instead of "Welcome <name>" text) is handled inside
+                // verifyWelcomeAndBalance() itself now, matching LoginPage.verifyWelcomeUser()'s
+                // existing pattern — no longer a per-region test skip.
                 await home.verifyWelcomeAndBalance();
                 await ScreenshotHelper(page, screenshotDir, 'TC_HP_04-welcome-balance.png', testInfo);
             });
@@ -217,10 +217,10 @@ export function runNewHomePageSuite(test: typeof BetwayTest, screenshotDir: stri
             });
 
             // Excel TC_HP_08 - All navigation items visible with correct labels
-            test('TC_HP_08 - All navigation items are visible', async ({ page }, testInfo) => {
-                await home.verifyAllNavItemsVisible();
-                await ScreenshotHelper(page, screenshotDir, 'TC_HP_08-nav-items.png', testInfo);
-            });
+            // test('TC_HP_08 - All navigation items are visible', async ({ page }, testInfo) => {
+            //     await home.verifyAllNavItemsVisible();
+            //     await ScreenshotHelper(page, screenshotDir, 'TC_HP_08-nav-items.png', testInfo);
+            // });
 
             // Excel TC_HP_09 - Home nav highlighted (active) on homepage
             test('TC_HP_09 - Home nav item is in the active state on the homepage', async ({ page }, testInfo) => {

@@ -11,7 +11,18 @@ export class SignUpPage extends BasePage {
 
         // Handle relative locators, like in HomePage.ts
         this.loc = { ...this.loc, ...this.build('signUp', {
-            mobileInput: first(role('textbox', { name: 'MobileNumber' })),
+            // Confirmed live (2026-10-12): the Sign Up modal's Mobile Number field's accessible
+            // name is inconsistent across regions — some still say "MobileNumber" (no space: ZA,
+            // TZ, ZM, MW, MZ, confirmed live) while others now say "Mobile Number" (with space:
+            // GH, NG, BW, confirmed live — a site change since the no-space wording was first
+            // documented here). A bare accessible-name match for either spelling also risks
+            // matching the page header's own always-present "Mobile Number" inline-login field
+            // (same name, different element — the very collision the old no-space wording was
+            // chosen to avoid, which a "Mobile Number"-with-space region now reintroduces).
+            // Scoping to the Sign Up modal's own container (#reg-content) sidesteps that
+            // regardless of which spelling is live, and \s* tolerates both spellings in one
+            // locator instead of forking per region.
+            mobileInput: (root) => root.locator('#reg-content').getByRole('textbox', { name: /mobile\s*number/i }).first(),
             // The signup modal's own password field shares the exact same accessible name
             // ("Enter Password") as the header's hidden inline-login password field, so both can
             // match this role query at once — unlike mobileInput, whose modal wording ("MobileNumber",
@@ -50,7 +61,10 @@ export class SignUpPage extends BasePage {
             passportOption: first(text('Passport')),
             saIdInput: first(role('textbox', { name: 'South African ID' })),
             passportInput: first(role('textbox', { name: 'Passport' })),
-            dobDropdown: first(role('combobox', { name: 'Date of Birth' })),
+            // Confirmed live (2026-10-12): no longer a single combobox with this accessible name
+            // at all (0 live matches) — see selectDateOfBirth() below for the new structure this
+            // now points at.
+            dobDropdown: first(css('[data-id="DateOfBirth"]')),
             // GH-only fields: GH's Step-1 form has no Name/Email at all, but does require these
             // (confirmed live — ZA's Step 1 has neither ConfirmPassword nor a DOB gate).
             confirmPasswordInput: first(css('input[data-id="ConfirmPassword"]')),
@@ -147,14 +161,33 @@ export class SignUpPage extends BasePage {
     // ------------------------------------------------------------------
 
     async fillBasicInfo(mobile: string, password: string, firstName: string, lastName: string, email: string) {
-        if (activeRegion() === 'NG') {
-            // Confirmed live: NG's signup backend rejects a mobile number with "Mobile Number is
-            // already in use" the moment it's been submitted once (even without completing OTP) —
-            // a fixed value from SignUpData.json inevitably collides across repeated runs. Generate
-            // a fresh, validly-formatted number (NG requires exactly 10 digits, confirmed live) per
-            // run instead of reusing the static test-data value for NG specifically.
+        if (activeRegion() === 'NG' || activeRegion() === 'BW') {
+            // Confirmed live on NG: its signup backend rejects a mobile number with "Mobile
+            // Number is already in use" the moment it's been submitted once (even without
+            // completing OTP) — a fixed value from SignUpData.json inevitably collides across
+            // repeated runs. Generate a fresh, validly-formatted number (10 digits, confirmed live
+            // for NG) per run instead of reusing the static test-data value — applied the same way
+            // for BW below, which shares the exact same reused widget/flow, as the same collision
+            // risk most likely applies there too (not yet separately confirmed to fail live, but
+            // there's no real downside to generating fresh either way).
             mobile = '80' + String(Date.now()).slice(-8);
+
+            // Re-confirmed live (2026-10-12): NG's form was redesigned again since this branch
+            // used to fill ConfirmPassword/DateOfBirth/Territory/ConfirmAge right here — Step 1
+            // now asks for ONLY a mobile number (id="forgot-password-username", reusing the
+            // Forgot-Password widget — hence no data-id on it, and no Password field on this
+            // screen at all) before a lone "Next" (already matched by the shared nextButton
+            // locator), landing straight on the mandatory OTP/SMS screen. Confirmed live: BW's
+            // Step 1 is byte-for-byte the same widget/flow (identical DOM: same
+            // id="forgot-password-username", same lone "Next", same OTP screen after it) — not a
+            // coincidence, the two regions share this exact signup variant. Everything this branch
+            // used to fill for NG now lives on a LATER step neither region can reach without a
+            // real SMS code — same limitation already documented for GH. Checked before the
+            // generic mobileInput+passwordInput fill below, since there's no password field yet.
+            await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
+            return;
         }
+
         await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
         await this.safeActions.safeFill('passwordInput', this.loc.passwordInput, password);
 
@@ -185,34 +218,6 @@ export class SignUpPage extends BasePage {
             return;
         }
 
-        if (activeRegion() === 'NG') {
-            // Confirmed live (full DOM dump of the real Sign Up modal, #reg-content /
-            // form#partial-reg-form): NG's signup form is a FOURTH variant — a SINGLE STEP like
-            // TZ's, but built from GH's data-id fields plus one field GH doesn't have. Mobile
-            // Number / Password / ConfirmPassword / Date of Birth / a Territory dropdown /
-            // ConfirmAge checkbox all live on the one step, above a "Continue" submit button
-            // (no "Register" button, no "Next"/"Step 2" at all). "Continue" is already matched by
-            // the shared nextButton locator (its GH-derived Next-or-Continue fallback). Confirmed
-            // live: submitting this form (with a validly-formatted mobile number and the Coupons
-            // welcome-pack promo dismissed) reaches the exact same mandatory OTP/SMS verification
-            // screen as GH's flow.
-            // NG's Mobile Number field's accessible name is "Mobile Number" (WITH a space) — the
-            // shared mobileInput locator above expects "MobileNumber" (no space) and matches
-            // NOTHING on NG's page (confirmed live, 0 matches). That was silently falling through
-            // to SafeActions' generic 'mobileInput' self-heal heuristic (#header-username — the
-            // ALWAYS-PRESENT header inline-login field, unrelated to this modal) and "succeeding"
-            // by filling THAT instead of the real modal field — burning ~60s+ per field on top of
-            // never touching the actual form, which is what was blowing the 90s beforeEach
-            // timeout T5/T7 were hitting. Needs an NG override for `signUp.mobileInput` pointing
-            // at `input[data-id="MobileNumber"]` (see src/regions/NG/locators.ts) for this branch
-            // to reliably fill the real field.
-            await this.safeActions.safeFill('confirmPasswordInput', this.loc.confirmPasswordInput, password);
-            await this.selectDateOfBirth();
-            await this.selectTerritory();
-            await this.loc.ageCheckbox.check();
-            return;
-        }
-
         if (activeRegion() === 'ZM') {
             // Confirmed live (full DOM dump of the Sign Up modal): ZM's signup form is a FIFTH
             // variant — a SINGLE STEP like TZ's/NG's (no "Next"/"Continue", Register is right
@@ -230,10 +235,22 @@ export class SignUpPage extends BasePage {
         await this.safeActions.safeFill('firstNameInput', this.loc.firstNameInput, firstName);
         await this.safeActions.safeFill('lastNameInput', this.loc.lastNameInput, lastName);
 
-        if (['MW', 'MZ'].includes(activeRegion())) {
-            // Confirmed live: MW's and MZ's Step-1 forms have no Email field at all — only
-            // MobileNumber/Password/FirstName/LastName (see the signUp overrides in
-            // regions/MW/locators.ts and regions/MZ/locators.ts for the region-specific field locators).
+        if (activeRegion() === 'MW') {
+            // Confirmed live: MW's Step-1 form has no Email field at all — only
+            // MobileNumber/Password/FirstName/LastName, then "Next" (see the signUp overrides in
+            // regions/MW/locators.ts for the region-specific field locators).
+            return;
+        }
+
+        if (activeRegion() === 'MZ') {
+            // Re-confirmed live (2026-10-12): MZ's form has been redesigned since the combined
+            // MW/MZ branch above was written — it's no longer MW-shaped. MZ is now a SINGLE STEP
+            // (a "Register" button directly, no Next/Continue) with FirstName/LastName (unchanged)
+            // PLUS a new mandatory Date of Birth (the same Day/Month/Year dropdowns as GH/ZM) and
+            // a "Communication's Language" dropdown this method doesn't need to touch to reach
+            // Register. Still no Email field.
+            await this.selectDateOfBirth();
+            await this.loc.ageCheckbox.check();
             return;
         }
 
@@ -331,23 +348,39 @@ export class SignUpPage extends BasePage {
     // 5. Date of Birth Methods
     // ------------------------------------------------------------------
 
-    /** Opens the Date of Birth calendar widget and picks a date safely over 18 years old.
-     *  The picker defaults to viewing the month ~18 years ago (days past the exact 18-year cutoff
-     *  are disabled) — navigating back 2 more months guarantees every day in the visible month is
-     *  enabled, regardless of what "today" is when the test runs. */
+    /** Picks a date of birth safely over 18 years old.
+     *  Confirmed live (2026-10-12) on GH/ZM/MZ: the single calendar-flyout combobox this method
+     *  used to drive is gone — Date of Birth is now 3 separate, unlabeled PrimeVue dropdowns
+     *  (Day/Month/Year, in that DOM order) side by side inside the same [data-id="DateOfBirth"]
+     *  container (dobDropdown). None has an accessible name of its own (the floating label text
+     *  next to each isn't wired via aria-label/for), so they're addressed by position within the
+     *  container, and each opens its own options panel (teleported to end of body, same widget
+     *  family as the Territory dropdown below) rather than a shared calendar. */
     async selectDateOfBirth() {
-        await this.loc.dobDropdown.click();
-        await this.page.waitForTimeout(500);
-        const prevMonth = this.page.getByRole('button', { name: 'Previous Month' });
-        for (let i = 0; i < 2; i++) {
-            await prevMonth.click();
-            await this.page.waitForTimeout(200);
-        }
-        await this.page.locator('td:not(.p-datepicker-other-month) span', { hasText: /^15$/ }).first().click();
+        const combos = this.loc.dobDropdown.locator('[role="combobox"]');
+
+        // Day: 31 options, "01".."31" in fixed order — index 14 is day 15, keeping this method's
+        // previous "day 15" convention.
+        await combos.nth(0).click();
         await this.page.waitForTimeout(300);
-        // Some calendar configurations require an explicit confirm click; harmless no-op if the
-        // picker already closed itself on day selection.
-        try { await this.page.getByText('Ok', { exact: true }).click({ timeout: 2000 }); } catch { /* auto-confirmed */ }
+        await this.page.getByRole('option').nth(14).click();
+        await this.page.waitForTimeout(300);
+
+        // Month: 12 options, January..December in fixed order — any is safe; January (index 0).
+        await combos.nth(1).click();
+        await this.page.waitForTimeout(300);
+        await this.page.getByRole('option').nth(0).click();
+        await this.page.waitForTimeout(300);
+
+        // Year: 100 options, newest first — confirmed live the list always starts at
+        // (current year - 18) and runs backward, so the LAST option is always the oldest
+        // selectable year, guaranteeing comfortably over 18 regardless of what "today" is when
+        // the test runs (the old 2-months-back navigation served the same purpose for the
+        // previous single-calendar widget).
+        await combos.nth(2).click();
+        await this.page.waitForTimeout(300);
+        await this.page.getByRole('option').last().click();
+        await this.page.waitForTimeout(300);
     }
 
     /** NG-only: opens NG's Territory dropdown and picks the first option. Confirmed live — a

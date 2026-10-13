@@ -5,6 +5,7 @@ import { css, role, text, label, placeholder, first, at } from '../locators/sel'
 import { highlightElements } from '../flows/HighlightElements';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { OddsSelection, LiveOddsSelection, DrawNoBetOddsSelection, EsportsOddsSelection, OddsSelectionAbove } from '../flows/OddSelection';
+import { activeRegion } from '../config/oddsApiUrl';
 
 export class BetSaverPage extends BasePage {
     constructor(page: Page, safeActions: SafeActions) {
@@ -105,9 +106,31 @@ export class BetSaverPage extends BasePage {
 
     // --- Low-Level Safe Wrappers (Moved from Spec Helper) ---
 
-    private async safeClick(locator: Locator, name: string) {
-        await expect(locator, `${name} should be visible`).toBeVisible({ timeout: 5000 });
+    // 5s was too tight for anything called straight after a reload: setupBetsaverActive() runs
+    // preparePage() (wait + reload + load-state) and then immediately asserted the Upcoming tab
+    // within 5s, which is what failed live on NG (T2/T3). Overridable per call so the slow,
+    // post-reload call sites can ask for more without lengthening every other wait.
+    private async safeClick(locator: Locator, name: string, timeout = 10000) {
+        await expect(locator, `${name} should be visible`).toBeVisible({ timeout });
         await locator.click();
+    }
+
+    /**
+     * OddsSelectionAbove() silently skips any event it cannot click and returns how many legs it
+     * actually selected — ignoring that return value turns a feed/popup problem into a confusing
+     * failure several steps later. Confirmed live on NG (T1): the real error surfaced as
+     * "#betslip-multi-tab ... Received: undefined", because the betslip never received a second
+     * leg and so never rendered a Multi tab at all. Fail here instead, naming the actual cause.
+     */
+    private requireLegs(selected: number, wanted: number, minOdd: number) {
+        if (selected < wanted) {
+            throw new Error(
+                `Odds selection fell short on ${activeRegion()}: needed ${wanted} leg(s) priced above ` +
+                `${minOdd} but only selected ${selected}. The betslip will not render the tabs or ` +
+                `offers this test asserts on. Usually the live feed had too few qualifying events, ` +
+                `or a popup intercepted the odd clicks.`
+            );
+        }
     }
 
     private async safeFill(locator: Locator, value: string, name: string) {
@@ -253,17 +276,17 @@ export class BetSaverPage extends BasePage {
     async verifyBetsaverNotActiveForFewSelections() {
         await this.loc.gotit.click().catch(() => { });
         // await this.preparePage();
-        await OddsSelectionAbove(2, 1.5, this.page);
-        await this.safeClick(this.loc.multiBetSlip, 'BetSaver Not Active');
+        this.requireLegs(await OddsSelectionAbove(2, 1.5, this.page), 2, 1.5);
+        await this.safeClick(this.loc.multiBetSlip, 'Multi betslip tab');
         await this.safeClick(this.loc.betSaverNotActive, 'BetSaver Not Active');
     }
 
     async setupBetsaverActive() {
         await this.loc.gotit.click().catch(() => { });
         await this.preparePage();
-        await this.safeClick(this.loc.upcomingButton, 'Upcoming Button');
-        await OddsSelectionAbove(7, 2, this.page);
-        await this.safeClick(this.loc.multiBetSlip, 'BetSaver Not Active');
+        await this.safeClick(this.loc.upcomingButton, 'Upcoming Button', 20000);
+        this.requireLegs(await OddsSelectionAbove(7, 2, this.page), 7, 2);
+        await this.safeClick(this.loc.multiBetSlip, 'Multi betslip tab');
         await this.safeClick(this.loc.betSaverActive, 'BetSaver Active');
     }
 

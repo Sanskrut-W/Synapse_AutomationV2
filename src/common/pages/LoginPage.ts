@@ -96,9 +96,15 @@ export class LoginPage extends HomePage {
         // framework — see BetSaverPage.preparePage(), OddSelection.ts).
         await expect(this.page.getByRole('button', { name: 'Deposit' }).first()).toBeVisible({ timeout: 15000 });
         // Best-effort highlight of the username text if it happens to be visible — not required
-        // for the check to pass, since the current header may not show it at all.
-        const welcome = this.page.locator('header').getByText(`${username}`).first();
-        await highlightElements(welcome).catch(() => { });
+        // for the check to pass, since the current header may not show it at all. Skipped
+        // entirely when there's no real username (e.g. user5 has no `name` field in most regions'
+        // userData.json): `${username}` would otherwise stringify to the literal "undefined",
+        // and highlightElements()'s .evaluate() on a locator matching zero elements silently eats
+        // the full 60s actionTimeout before the .catch() swallows it — confirmed live on ZA.
+        if (username) {
+            const welcome = this.page.locator('header').getByText(`${username}`).first();
+            await highlightElements(welcome).catch(() => { });
+        }
     }
 
     // ── Navigation functions ─────────────────────────────────────────────────
@@ -125,8 +131,12 @@ export class LoginPage extends HomePage {
     }
 
     // ── Clicking functions ───────────────────────────────────────────────────
-    async clickLogin() {
-        await this.safeActions.safeClick('loginButton', this.loc.loginButton);
+    // Optional timeout: safeClick splits its budget into 3 primary attempts, so the 60s default
+    // costs ~62s before it even reaches the heuristic tier. That is fine for a deliberate login,
+    // but ruinous for a caller using this as a best-effort fallback (see revealLoginForm in
+    // loginSuite.shared.ts) inside a test that has other work to do.
+    async clickLogin(timeout?: number) {
+        await this.safeActions.safeClick('loginButton', this.loc.loginButton, timeout ? { timeout } : undefined);
     }
 
     async clickHamburgerMenu() {
@@ -166,6 +176,13 @@ export class LoginPage extends HomePage {
         // (same class of responsive-layout issue already worked around in NewHomePage/BetSaverPage).
         await this.page.setViewportSize({ width: 1920, height: 1080 });
         await this.goto();
+        // Confirmed live on GH: a recurring promo toast (not caught by goto()'s own one-time
+        // dismiss) can cover the form right as this method tries to fill it, so the fill/submit
+        // silently doesn't register — this method never asserted success afterward, so a real
+        // downstream flow (e.g. betInfluencer's User1PlaceBets) kept going while still logged out,
+        // only surfacing much later as a missing "Bet Now" button. Same class of bug already
+        // fixed in BasePage.Login() — this method needs its own copy since it doesn't call that.
+        await this.closePromotionPopupIfVisible(2000);
         // Confirmed live on MZ: the header shows a collapsed "Login" button instead of an
         // always-visible inline Mobile Number field — same behavior BasePage.Login() already
         // handles for this exact reason. This method has its own separate fill logic (it takes
@@ -180,6 +197,7 @@ export class LoginPage extends HomePage {
         await this.safeActions.safeFill('mobileInput', this.loc.mobileInput, mobile);
         await this.safeActions.safeFill('passwordInput', this.loc.passwordInput, password);
         await this.page.keyboard.press('Enter');
+        await this.closePromotionPopupIfVisible(9000);
         await this.page.waitForTimeout(5000); // Wait for login to complete
     }
 

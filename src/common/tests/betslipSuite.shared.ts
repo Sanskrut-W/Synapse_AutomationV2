@@ -15,7 +15,15 @@ async function hasZeroBalance(page: Page): Promise<boolean> {
     // targets by text rather than a CSS class.
     const container = page.getByText('Balance', { exact: true }).first().locator('..');
     const text = await container.textContent({ timeout: 5000 }).catch(() => null);
-    return !!text && /0[.,]00/.test(text);
+    if (!text) return false;
+    // Confirmed live on TZ: the previous /0[.,]00/ substring check falsely matched real non-zero
+    // balances like "TSh 4,300.00" (the "0" right before the decimal point plus ".00" cents reads
+    // as a match, regardless of the actual amount) — any balance ending in a whole ten/hundred
+    // with ".00" cents (100.00, 300.00, 4300.00, ...) was misread as zero. Parse the actual number
+    // and compare it, not a loose substring.
+    const match = text.match(/[\d,]+\.\d{2}/);
+    if (!match) return false;
+    return parseFloat(match[0].replace(/,/g, '')) === 0;
 }
 
 // TZ/GH/ZM/NG's Win Boost tiers need 3 legs to reach the first real tier (3%, tooltip "Win Boost
@@ -27,7 +35,7 @@ async function hasZeroBalance(page: Page): Promise<boolean> {
 // (winBoostValue's currency still needs its own per-region override — see regions/MW and
 // regions/MZ locators.ts).
 function winBoostLegs(): number {
-    return ['TZ', 'GH', 'MW', 'MZ', 'ZM', 'NG'].includes(activeRegion()) ? 3 : 2;
+    return ['TZ', 'GH', 'MW', 'MZ', 'ZM', 'NG', 'BW'].includes(activeRegion()) ? 3 : 2;
 }
 
 // MW's Bet Saver threshold needs 8 legs to activate — confirmed live. ZA's own threshold is
@@ -172,8 +180,10 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
             // Confirmed live on NG while genuinely logged in with a healthy balance (Welcome banner,
             // real balance shown, Deposit button present) — #single-cash-tab still never renders.
             // GH shows the identical symptom. Not a locator bug — these regions simply don't offer
-            // a "Use Cash Balance" betslip option.
-            test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Use Cash Balance" option on the betslip');
+            // a "Use Cash Balance" betslip option. Confirmed live (2026-10-12): BW shows the exact
+            // same symptom — a real bet successfully added to a healthy-balance account's betslip
+            // (odds 1.98, Bet Now visible), with no cash/freebet toggle anywhere on the panel.
+            test.skip(['GH', 'NG', 'ZM', 'BW'].includes(activeRegion()), 'This region has no "Use Cash Balance" option on the betslip');
             await OddsSelectionAbove(1, 1, page);
             await betslipPage.Login();
             await betslipPage.closePromotionPopup();
@@ -184,7 +194,7 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T36-Verify functionality of "Use cash balance" checkbox on betslip for multi section', async ({ betslipPage, page }, testInfo) => {
-            test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Use Cash Balance" option on the betslip');
+            test.skip(['GH', 'NG', 'ZM', 'BW'].includes(activeRegion()), 'This region has no "Use Cash Balance" option on the betslip');
             await OddsSelectionAbove(2, 1, page);
             await betslipPage.Login();
             await betslipPage.closePromotionPopup();
@@ -196,8 +206,8 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T19-Verify functionality of "Use free bet" checkbox on betslip for single section', async ({ betslipPage, page }, testInfo) => {
-            // Same confirmed-absent finding as T18 above, for the "Use Free Bet" option.
-            test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Use Free Bet" option on the betslip');
+            // Same confirmed-absent finding as T18 above, for the "Use Free Bet" option — BW included.
+            test.skip(['GH', 'NG', 'ZM', 'BW'].includes(activeRegion()), 'This region has no "Use Free Bet" option on the betslip');
             await OddsSelectionAbove(1, 1, page);
             await betslipPage.Login();
             await betslipPage.closePromotionPopup();
@@ -208,7 +218,7 @@ export function runBetslipSuite(test: typeof BetwayTest, screenshotDir: string) 
         });
 
         test('T37-Verify functionality of "Use free bet" checkbox on betslip for multi section', async ({ betslipPage, page }, testInfo) => {
-            test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Use Free Bet" option on the betslip');
+            test.skip(['GH', 'NG', 'ZM', 'BW'].includes(activeRegion()), 'This region has no "Use Free Bet" option on the betslip');
             await OddsSelectionAbove(2, 1, page);
             await betslipPage.Login();
             await betslipPage.closePromotionPopup();

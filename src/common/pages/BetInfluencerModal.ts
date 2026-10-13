@@ -207,6 +207,7 @@ export class BetInfluencerModal extends BetslipPage {
         await this.LoginArgs(`${userData.user1.mobile}`, `${userData.user1.password}`);
         await OddsSelectionAbove(legsCount, 1.2, this.page);
         await this.clickBetNowBtn();
+        await this.retryBetIfOddsChanged();
         const bookingCode = await this.loc.bookingCodeMessage.locator('..').innerText();
         console.log(bookingCode);
         await this.page.locator('#modal-close-btn').first().click();
@@ -228,6 +229,7 @@ export class BetInfluencerModal extends BetslipPage {
         await this.loc.bookingCodeInput.fill(`${SharedBookingCode}`);
         await this.page.keyboard.press('Enter');
         await this.clickBetNowBtn();
+        await this.retryBetIfOddsChanged();
         // await this.loc.betConfirmation.locator('..').getByRole('img').first().click();
         await this.LogOut();
         return SharedBookingCode;

@@ -111,7 +111,9 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
                 // Gaming, My Casino Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Live
                 // Chat, Log Out (0 DOM matches for the text anywhere on the page) — this was
                 // hitting the 60s actionTimeout on documentVerification.scrollIntoViewIfNeeded().
-                test.skip(['GH', 'NG'].includes(activeRegion()), 'This region has no "Document Verification" option in My Account');
+                // Confirmed live on ZM too (2026-10-12): same absence, same symptom — the panel
+                // opens with every sibling option present and 0 matches for the text.
+                test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Document Verification" option in My Account');
                 await hamburgerMenuPage.verifyAndClickDocumentVerification();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'DocVerification.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -131,7 +133,16 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
                 // Casino Big Wins, Bet Influencer, Promo Voucher, Betway Rewards, Live Chat, Log
                 // Out — no Betway Benefits (and no Document Verification either, handled above).
                 // ZM confirmed absent too (0 matches for the text anywhere on the page).
-                test.skip(['MW', 'MZ', 'TZ', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Betway Benefits" option in My Account');
+                // Confirmed live on GH too (2026-09-22): its My Account panel now lists exactly My
+                // Gifts, My Profile, My Bets, Bonus Summary, Transaction History, Responsible
+                // Gaming, My Casino Big Win, Bet Influencer, Promo Voucher, Betway Rewards, Live
+                // Chat, Log Out — no Betway Benefits. Wasn't absent when this skip list was first
+                // written; a real, recent removal on GH's live site, not a stale assumption.
+                // Confirmed live (2026-10-12): BW's My Account panel has the same shape as the others
+            // above — My Gifts/My Profile/My Bets/Bonus Summary/Transaction History/Responsible
+            // Gaming/Document Verification/My Casino Big Wins/Bet Influencer/Promo Voucher/
+            // "Betway Rewards" (not "Betway Benefits")/Live Chat/Log Out. No Betway Benefits item.
+            test.skip(['MW', 'MZ', 'TZ', 'NG', 'ZM', 'GH', 'BW'].includes(activeRegion()), 'This region has no "Betway Benefits" option in My Account');
                 await hamburgerMenuPage.verifyAndClickBetwayBenefits();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'BetwayBenefits.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();
@@ -180,7 +191,9 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
 
         test('5-Verify Insider Blog is visible and clickable in Hamburger Menu', async ({ headerPage }, testInfo) => {
             // Confirmed absent (live DOM check, 0 matches) from ZM's and TZ's hamburger menus.
-            test.skip(['ZM', 'TZ'].includes(activeRegion()), 'Insider Blog is not present in this region');
+            // Confirmed live (2026-10-12): BW's Quick Links section has only Statistics/Betway
+            // Scores App/How To — no Insider Blog either.
+            test.skip(['ZM', 'TZ', 'BW'].includes(activeRegion()), 'Insider Blog is not present in this region');
             await headerPage.verifyInsiderBlog();
             await ScreenshotHelper(headerPage.page, screenshotDir, 'T5-InsiderBlog.png', testInfo);
             await headerPage.clickInsiderBlog();

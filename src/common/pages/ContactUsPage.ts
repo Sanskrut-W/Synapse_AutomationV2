@@ -29,6 +29,19 @@ export class ContactUsPage extends HomePage {
             formQueryInput: css('#your-comment-or-query'),
             formQueryType: text('Query'),
             formSubmitButton: role('button', { name: 'Submit' }),
+            // Added after confirming live on GH's real /contact-us page: there's no contact FORM
+            // anymore (no email/mobile/query inputs, no Submit button — the `form*`/`email`/`X`
+            // (as literal text)/`facebook` (as literal text) locators above are stale, same
+            // "feature redesigned away" pattern already seen with Feeds), but the live-chat entry
+            // point, Standard Rate Call number, and X/Facebook social icons are all real. These are
+            // href/regex-based (not per-region text) so they should hold across regions.
+            socialXLink: css('a[href*="x.com"], a[href*="twitter.com"]'),
+            socialFacebookLink: css('a[href*="facebook.com"]'),
+            // Confirmed live across regions: not every region prefixes with "+" (MZ shows a plain
+            // local number, e.g. "20606600", vs GH's "+233 30 825 5838") — match any digit run of
+            // real phone-number length, tolerating spaces/slashes between groups, without requiring
+            // a leading "+".
+            callPhoneNumber: (root) => root.getByText(/\d[\d\s/]{6,}\d/),
         }) };
     }
 
@@ -94,6 +107,30 @@ export class ContactUsPage extends HomePage {
     async verifyCall() {
         await this.loc.call.waitFor({ state: 'visible', timeout: 15000 });
         await highlightElementBorder(this.loc.call);
+    }
+
+    async verifyCallPhoneNumber() {
+        await this.loc.callPhoneNumber.first().waitFor({ state: 'visible', timeout: 15000 });
+        await highlightElementBorder(this.loc.callPhoneNumber.first());
+    }
+
+    async verifySocialLinks() {
+        await this.loc.socialXLink.first().waitFor({ state: 'visible', timeout: 15000 });
+        await highlightElementBorder(this.loc.socialXLink.first());
+        await this.loc.socialFacebookLink.first().waitFor({ state: 'visible', timeout: 15000 });
+        await highlightElementBorder(this.loc.socialFacebookLink.first());
+    }
+
+    // Split out from verifySocialLinks() above: confirmed live, MW's real Contact Us page has no
+    // Facebook link at all (Instagram + X only) — the combined check can't be used region-wide.
+    async verifySocialXLink() {
+        await this.loc.socialXLink.first().waitFor({ state: 'visible', timeout: 15000 });
+        await highlightElementBorder(this.loc.socialXLink.first());
+    }
+
+    async verifySocialFacebookLink() {
+        await this.loc.socialFacebookLink.first().waitFor({ state: 'visible', timeout: 15000 });
+        await highlightElementBorder(this.loc.socialFacebookLink.first());
     }
 
     async verifyFormEmailInput() {

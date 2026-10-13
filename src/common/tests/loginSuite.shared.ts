@@ -2,6 +2,7 @@ import type { test as BetwayTest } from '../fixtures/betwayFixture';
 import { expect } from '@playwright/test';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { loadRegionData } from '../config/regionData';
+import { activeRegion } from '../config/oddsApiUrl';
 
 const userData = loadRegionData('json-data/userData.json');
 
@@ -12,7 +13,7 @@ async function revealLoginForm(loginPage: any) {
     try {
         await loginPage.loc.mobileInput.waitFor({ state: 'visible', timeout: 3000 });
     } catch {
-        await loginPage.clickLogin();
+        await loginPage.clickLogin(10000);
         await loginPage.loc.mobileInput.waitFor({ state: 'visible', timeout: 10000 });
     }
 }
@@ -43,6 +44,12 @@ export function runLoginSuite(test: typeof BetwayTest, screenshotDir: string) {
         // });
 
         test('T11 - Verify user is able to login from signup popup', async ({ loginPage }, testInfo) => {
+            // Confirmed live (2026-10-12): BW's and NG's Sign Up modal was redesigned to a single
+            // Mobile Number field + "Next" button — the "Already have an account? Login" link this
+            // flow depends on (a 2nd "Login"-named button inside the popup) no longer exists on
+            // either region's modal at all (0 matches), only the header's own permanent Login
+            // button. Not a locator bug — there's nothing left to click inside the popup.
+            test.skip(['BW', 'NG'].includes(activeRegion()), 'This region\'s redesigned Sign Up modal has no "Login" link inside it anymore');
             await loginPage.LoginThroughPopUp();
             await ScreenshotHelper(loginPage.page, screenshotDir, 'T11-loginPage', testInfo);
         });
@@ -70,10 +77,21 @@ export function runLoginSuite(test: typeof BetwayTest, screenshotDir: string) {
 
         // Consolidates the old repo's ~16 near-duplicate negative-mobile/password variants (empty,
         // too short, too long, alphanumeric, special characters), which never actually asserted
-        // anything beyond a screenshot. Confirmed live: any NON-EMPTY-but-invalid mobile/password
-        // combination is rejected server-side with "Access Denied. Check Username and/or Password"
-        // — a real, checkable signal the old tests never verified.
-        test('T14-29-Verify login is rejected with "Access Denied" for invalid mobile/password combinations', async ({ loginPage, page }, testInfo) => {
+        // anything beyond a screenshot. Confirmed live across GH/MW/MZ/TZ/NG: a NON-EMPTY-but-invalid
+        // mobile/password combination is rejected server-side, but with EITHER of two messages —
+        // "Invalid username and/or password" on a normal bad attempt, or "Access Denied. Check
+        // Username and/or Password" once the server's own attempt-throttling kicks in (same mobile
+        // number gets reused across the 4 cases in this loop, and across repeated runs) — not a
+        // per-region text difference, both were seen for the same region across different runs.
+        // Matching either is the real, checkable signal; asserting only one flaked whichever
+        // server-side state won the race.
+        test('T14-29-Verify login is rejected for invalid mobile/password combinations', async ({ loginPage, page }, testInfo) => {
+            // Four full goto() + reveal + fill + submit + assert cycles in one test. Measured
+            // 62-68s across every region on a healthy run, against a 90s default — roughly 25%
+            // headroom, which any regional slowness erases (GH, ZA and ZM all tipped over).
+            // The work is legitimate, so give it a budget that matches rather than trimming
+            // coverage; the per-step timeouts below still fail fast on a real defect.
+            test.setTimeout(180000);
             const invalidCases: { mobile: string; password: string; label: string }[] = [
                 { mobile: 'abc!@#', password: userData.user1.password, label: 'alphanumeric-special-mobile' },
                 { mobile: '12', password: userData.user1.password, label: 'too-short-mobile' },
@@ -86,13 +104,13 @@ export function runLoginSuite(test: typeof BetwayTest, screenshotDir: string) {
                 await loginPage.loc.mobileInput.fill(mobile);
                 await loginPage.loc.passwordInput.fill(password);
                 await page.keyboard.press('Enter');
-                await expect(page.getByText('Access Denied')).toBeVisible({ timeout: 10000 });
+                await expect(page.getByText(/Invalid username and\/or password|Access Denied/i)).toBeVisible({ timeout: 10000 });
                 await ScreenshotHelper(page, screenshotDir, `T14-29-invalid-${label}`, testInfo);
             }
         });
 
         // Confirmed live: an EMPTY mobile or password field is blocked client-side — the form
-        // simply doesn't submit (no "Access Denied", no navigation), unlike a non-empty-but-invalid
+        // simply doesn't submit (no error text, no navigation), unlike a non-empty-but-invalid
         // value above. The old tests for these cases never checked anything either way.
         test('T14-29b-Verify empty mobile/password fields do not submit the login form', async ({ loginPage, page }, testInfo) => {
             await loginPage.goto();

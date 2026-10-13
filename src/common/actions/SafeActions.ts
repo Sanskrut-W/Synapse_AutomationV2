@@ -117,6 +117,47 @@ export class SafeActions {
     }
 
     /** A self-healing highlight — never throws, since it's only used for visual/screenshot evidence. */
+    /**
+     * Click a locator that is already the RIGHT element but is covered by an overlay.
+     *
+     * Deliberately NOT safeClick: the 3-tier self-heal exists for a locator that stopped matching,
+     * and is useless here. Playwright has already resolved the element and confirmed it visible,
+     * enabled and stable — the click fails only because something else in a modal's subtree
+     * intercepts pointer events. A heuristic or AI-suggested selector resolves to the same covered
+     * element, so this escalates HOW it clicks rather than WHAT it clicks:
+     *   1. normal click (short timeout) — wins whenever the overlay is transient
+     *   2. force click — skips the actionability hit-test
+     *   3. dispatchEvent('click') — bypasses hit-testing entirely, for an overlay that also
+     *      swallows the synthesized mouse events
+     *
+     * The short default timeout is half the point: a normal .click() against a permanent
+     * interceptor burns the full 60s actionability budget before it fails, which on its own can
+     * exhaust the 90s test timeout. Confirmed live on NG (betInfluencer T17): the logout
+     * confirmation modal renders a notice box over its own full-width "Proceed" button, so every
+     * attempt was intercepted — Playwright retried ~100 times across 60s and the test died there.
+     */
+    async clickThroughOverlay(key: string, primaryLocator: Locator, options?: { timeout?: number }) {
+        const timeout = options?.timeout ?? 10000;
+
+        try {
+            await primaryLocator.click({ timeout });
+            return;
+        } catch {
+            console.warn(`[Overlay] Normal click on '${key}' was blocked. Retrying with force...`);
+        }
+
+        try {
+            await primaryLocator.click({ timeout, force: true });
+            console.log(`[Overlay] SUCCESS: force click worked for '${key}'.`);
+            return;
+        } catch {
+            console.warn(`[Overlay] Force click on '${key}' failed too. Dispatching a click event...`);
+        }
+
+        await primaryLocator.dispatchEvent('click');
+        console.log(`[Overlay] SUCCESS: dispatched click event for '${key}'.`);
+    }
+
     async safeHighlight(key: string, primary: Locator) {
         try {
             await primary.waitFor({ state: 'attached', timeout: 2000 });

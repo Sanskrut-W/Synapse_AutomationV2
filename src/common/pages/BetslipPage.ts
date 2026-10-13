@@ -356,7 +356,28 @@ export class BetslipPage extends SportsPage {
     }
 
     async clickBetNowBtn() {
+        // Confirmed live on GH: a recurring promo toast can mount on top of the betslip and
+        // intercept this click for the full actionability timeout — dismiss first.
+        await this.closePromotionPopupIfVisible(2000);
         await this.loc.betNowBtn.click();
+    }
+
+    /**
+     * Confirmed live on GH: legs picked from live/in-play markets (e.g. fast-moving eSoccer) can
+     * have their odds move in the few seconds between selection and submission, producing a "Bet
+     * Confirmation — Failed Bets... Your odds have changed, please retry your bet" modal with its
+     * own "Retry" button, instead of the normal booking-code confirmation. This is real live-market
+     * volatility, not a locator/login bug — retry a bounded number of times (accepting whatever the
+     * new odds are) before giving up. No-op if the normal confirmation showed up instead.
+     */
+    async retryBetIfOddsChanged(maxAttempts = 4) {
+        for (let i = 0; i < maxAttempts; i++) {
+            const retryBtn = this.page.getByRole('button', { name: 'Retry', exact: true });
+            const failedBetsShown = await retryBtn.isVisible({ timeout: 5000 }).catch(() => false);
+            if (!failedBetsShown) return;
+            await retryBtn.click();
+            await this.page.waitForTimeout(2000);
+        }
     }
 
     async clickShareBtn() {

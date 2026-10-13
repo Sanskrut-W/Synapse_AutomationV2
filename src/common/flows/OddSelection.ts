@@ -40,10 +40,17 @@ async function clickDismissingPopups(page: Page, locator: ReturnType<Page['locat
 }
 
 async function waitForOddsApi(page: Page, apiUrl: string, trigger: () => Promise<unknown>) {
-    const responsePromise = page.waitForResponse((r) => r.url().startsWith(apiUrl) && r.status() === 200);
+    // Confirmed live on GH: `trigger` can run multiple steps after the awaited response arrives
+    // (e.g. OddsSelectionAbove's trigger reloads, then separately clicks the "Upcoming" tab) — if
+    // any of those later steps causes another navigation before `.json()` is called, Chrome
+    // discards the earlier response's body ("Response body is not available for a response that
+    // was navigated away from"). Reading the body as soon as the response itself resolves — not
+    // after `trigger()` finishes — avoids the race.
+    const responseJsonPromise = page
+        .waitForResponse((r) => r.url().startsWith(apiUrl) && r.status() === 200)
+        .then((r) => r.json());
     await trigger();
-    const response = await responsePromise;
-    return response.json();
+    return responseJsonPromise;
 }
 
 /**

@@ -130,6 +130,11 @@ export class HamburgerMenuPage extends HeaderPage {
     }
 
     async verifyAndClickBetwayBenefits() {
+        // Confirmed live on GH: a recurring promo toast can mount on top of the page while the
+        // hamburger drawer is open and close it (outside-click behavior), leaving `betwayBenefits`
+        // detached/hidden — scrollIntoViewIfNeeded then hangs waiting for it to stabilize. Dismiss
+        // first so the drawer stays open.
+        await this.closePromotionPopupIfVisible(2000);
         await this.loc.betwayBenefits.scrollIntoViewIfNeeded();
         await highlightElementBorder(this.loc.betwayBenefits);
         await this.clickBetwayBenefits();

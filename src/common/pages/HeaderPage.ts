@@ -226,7 +226,11 @@ export class HeaderPage extends HomePage {
         // Promo Voucher, Betway Rewards, Live Chat, Log Out (0 DOM matches for the text anywhere
         // on the page). This was hitting the 60s actionTimeout on documentVerification's
         // highlightElementBorder() (never resolves).
-        if (!['GH', 'NG'].includes(activeRegion())) {
+        // ZM confirmed absent too (2026-10-12): its My Account panel renders Deposit, Withdraw,
+        // My Bets, Bonus Summary, Transaction History, Responsible Gaming, Bet Influencer, Promo
+        // Voucher, Betway Rewards and Log Out — with 0 DOM matches for 'Document Verification'
+        // anywhere on the page while the panel was open.
+        if (!['GH', 'NG', 'ZM'].includes(activeRegion())) {
             await highlightElementBorder(this.loc.documentVerification);
         }
         if (!['MW', 'MZ', 'ZM'].includes(activeRegion())) {

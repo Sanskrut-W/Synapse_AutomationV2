@@ -113,8 +113,21 @@ export class NewHomePage extends HeaderPage {
         // https://www.betway.co.za/, which silently ran every region's newHomePage suite against
         // the ZA site — logging in with the region's own credentials on the wrong domain, hence
         // every "After Login" test timing out for non-ZA regions.
+        // gotoHome() deliberately does NOT call BasePage.goto() (it lands on "/" rather than the
+        // sports path), which also meant it skipped registerOnetrustOverlayHandler() — the one
+        // place that arms Playwright's locator handler for OneTrust's stuck full-page backdrop.
+        // Confirmed live on NG (2026-10-12): every "After Login" nav/CTA test here failed with
+        // ".onetrust-pc-dark-filter ... subtree intercepts pointer events" for the full 60s click
+        // timeout (TC_HP_12, TC_HP_15, TC_HP_16), while the rest of the suite — which does route
+        // through BasePage.goto() — was unaffected. Register before navigating, so the handler is
+        // armed for the first click after load. No-op in regions that never render the overlay.
+        await this.registerOnetrustOverlayHandler();
         await this.page.goto('/', { waitUntil: 'domcontentloaded' });
         await this.page.waitForTimeout(3000);
+        // Same reason gotoHome() has to arm the handler itself: it never calls BasePage.goto(),
+        // so it also missed the consent dismissal. Accept before suppressPromoOverlay(), since
+        // the banner sits across the bottom of the viewport and can cover the promo close button.
+        await this.acceptCookieConsentIfVisible();
         await this.suppressPromoOverlay();
     }
 
@@ -187,6 +200,11 @@ export class NewHomePage extends HeaderPage {
         const item = this.navItem(label);
         await item.scrollIntoViewIfNeeded();
         await highlightElementBorder(item);
+        // Confirmed live on GH: a promotional toast (Casino Fixtures campaign) can mount ~3-4s
+        // after any page load and RECURS, not just a one-time popup — the dismiss already done in
+        // goto() only catches its first appearance, so a click happening later in the test can
+        // still get intercepted.
+        await this.closePromotionPopupIfVisible(2000);
         await item.click();
         await this.page.waitForLoadState('domcontentloaded');
         await expect(this.page).toHaveURL(typeof expectedPath === 'string' ? new RegExp(expectedPath.replace(/[/]/g, '\\/')) : expectedPath);
@@ -201,6 +219,7 @@ export class NewHomePage extends HeaderPage {
 
     async clickHeroSportCta() {
         await highlightElementBorder(this.nh.heroSportCta);
+        await this.closePromotionPopupIfVisible(2000);
         await this.nh.heroSportCta.click();
         await this.page.waitForLoadState('domcontentloaded');
         await expect(this.page).toHaveURL(/\/sport\/soccer/);
@@ -208,6 +227,7 @@ export class NewHomePage extends HeaderPage {
 
     async clickHeroCasinoCta() {
         await highlightElementBorder(this.nh.heroCasinoCta);
+        await this.closePromotionPopupIfVisible(2000);
         await this.nh.heroCasinoCta.click();
         await this.page.waitForLoadState('domcontentloaded');
         await expect(this.page).toHaveURL(/casino/i);
@@ -248,6 +268,7 @@ export class NewHomePage extends HeaderPage {
      *  In headless the registration panel doesn't change the URL; its appearance is detected by the
      *  "Already have an account" link, which only exists once the registration step has surfaced. */
     async verifySignUpOpensRegistration() {
+        await this.closePromotionPopupIfVisible(2000);
         await this.nh.signUpButton.click();
         await this.page.waitForTimeout(3000);
         await expect(this.page.getByText(/Already have an account/i).first()).toBeAttached();
@@ -275,9 +296,19 @@ export class NewHomePage extends HeaderPage {
 
     // ── Logged-in specific ───────────────────────────────────────────────────
     async verifyWelcomeAndBalance() {
-        await expect(this.nh.welcomeName).toBeVisible();
+        // Confirmed live: TZ's logged-in header shows a profile avatar icon instead of "Welcome
+        // <name>" text — same substitution already proven for LoginPage.verifyWelcomeUser(). The
+        // balance label itself ("Balance TSh x.xx") is confirmed present on TZ too, so only the
+        // identity signal needs to branch, not the whole check.
+        if (activeRegion() === 'TZ') {
+            const avatar = this.page.locator('feeds-avatar-image');
+            await expect(avatar).toBeVisible();
+            await highlightElementBorder(avatar);
+        } else {
+            await expect(this.nh.welcomeName).toBeVisible();
+            await highlightElementBorder(this.nh.welcomeName);
+        }
         await expect(this.nh.balanceLabel).toBeVisible();
-        await highlightElementBorder(this.nh.welcomeName);
         await highlightElementBorder(this.nh.balanceLabel);
     }
 

@@ -74,6 +74,86 @@ export class BasePage {
     }
 
     /**
+     * Confirmed live on NG (2026-10-07): the OneTrust cookie-consent widget's full-page dark
+     * backdrop ('.onetrust-pc-dark-filter') can stay rendered and pointer-events-enabled even
+     * after both its own banner and preference panel are hidden (display:none) — a stuck OneTrust
+     * state, not anything this suite does. It then silently intercepts clicks anywhere on the page
+     * ("subtree intercepts pointer events"), and re-confirmed live: it doesn't just appear once —
+     * it can reappear between two clicks moments apart (e.g. opening a menu, then clicking inside
+     * it), so a one-off check-and-hide before each action is a race against whenever it next
+     * re-renders. `addLocatorHandler` is Playwright's purpose-built answer to exactly this: once
+     * registered, the engine itself re-checks for the overlay and runs the handler every time it
+     * would otherwise block an actionability wait, however many times that happens, with no
+     * call-site-by-call-site guessing required. Registered once per page, in goto().
+     */
+    protected async registerOnetrustOverlayHandler() {
+        await this.page.addLocatorHandler(
+            this.page.locator('.onetrust-pc-dark-filter'),
+            async (overlay) => {
+                await overlay.evaluate((el) => { (el as HTMLElement).style.display = 'none'; });
+            },
+        );
+
+        // The banner can also come back mid-test (new context, cookie not yet written, or a
+        // navigation that re-runs the OneTrust script). Registering it as a locator handler means
+        // Playwright dismisses it whenever it would block an action, instead of each call site
+        // having to guess when it might reappear.
+        await this.page.addLocatorHandler(
+            this.page.locator('#onetrust-banner-sdk'),
+            async (banner) => {
+                await this.page
+                    .locator('#onetrust-accept-btn-handler')
+                    .or(this.page.getByRole('button', { name: /accept all cookies/i }))
+                    .first()
+                    .click({ timeout: 5000 })
+                    .catch(() => { /* fall through to the hide below */ });
+                // A locator handler MUST leave its locator non-visible or Playwright aborts the
+                // action after a few runs — so if Accept did not take (re-render, animation), hide
+                // the banner outright rather than letting the handler spin.
+                await banner
+                    .evaluate((el) => { (el as HTMLElement).style.display = 'none'; })
+                    .catch(() => { /* already gone */ });
+            },
+        );
+    }
+
+    /**
+     * The OneTrust consent banner itself ("Your cookie privacy" / "Accept All Cookies"), as opposed
+     * to the stuck backdrop handled above. Confirmed live on NG (2026-10-12): it docks across the
+     * bottom of the viewport and covers whatever sits there, and opening "Manage Cookie Preferences"
+     * is what raises the '.onetrust-pc-dark-filter' that then intercepts clicks page-wide.
+     *
+     * Clicking Accept (rather than hiding it) is deliberate: accepting sets OneTrust's own consent
+     * cookie, so the banner stays gone for the rest of the browser context instead of returning on
+     * every navigation and reload. The id is OneTrust's standard one, with a text fallback in case
+     * this tenant renames it. Best-effort throughout — a region that never shows the banner, or a
+     * context where it was already accepted, must be a silent no-op.
+     * Budget note (2026-10-13): this started at 8000ms and that was too expensive. goto() is
+     * called repeatedly inside a single test — login T14-29 does four — so an 8s wait on every
+     * navigation where no banner exists added ~30s to that test and pushed it from a steady
+     * 62-68s to a 90s timeout in GH, ZA and ZM. The wait only needs to cover a banner that is
+     * already on the page; anything that appears later is caught by the locator handler
+     * registered above, which is the real safety net. Keep this short.
+     */
+    protected async acceptCookieConsentIfVisible(timeout: number = 1500) {
+        const accept = this.page
+            .locator('#onetrust-accept-btn-handler')
+            .or(this.page.getByRole('button', { name: /accept all cookies/i }))
+            .first();
+        try {
+            await accept.waitFor({ state: 'visible', timeout });
+            await accept.click({ timeout: 5000 });
+            await this.page
+                .locator('#onetrust-banner-sdk')
+                .waitFor({ state: 'hidden', timeout: 5000 })
+                .catch(() => { /* accepted but animating out — the handler below covers the rest */ });
+        } catch {
+            // Not shown: already accepted, or this region doesn't serve OneTrust. Both are fine.
+        }
+    }
+
+
+    /**
      * A separate "Informative" promotional interstitial (e.g. "New Casino Experience") can
      * probabilistically layer on top of the Sign Up popup right after it opens. It must be scoped
      * to its own "Informative" header bar before closing: that popup's own close button reuses the
@@ -93,6 +173,16 @@ export class BasePage {
     }
 
     async goto(path: string = '/sport/soccer') {
+        // Confirmed live repeatedly across this codebase (LoginArgs, OddSelectionAbove,
+        // BetSaverPage.preparePage, NewHomePage) as a recurring, independently-rediscovered fix:
+        // `viewport: null` + `--start-maximized` doesn't reliably yield a desktop-width window in
+        // this environment — it can render the mobile-breakpoint layout instead (a different login
+        // panel, a bottom tab bar, etc.), which then makes otherwise-correct locators fail to
+        // become visible. Forcing it once here, at the one shared navigation entrypoint, instead
+        // of patching each call site that happens to notice.
+        await this.page.setViewportSize({ width: 1920, height: 1080 });
+        await this.registerOnetrustOverlayHandler();
+
         let lastError: Error | undefined;
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
@@ -106,11 +196,21 @@ export class BasePage {
         }
         if (lastError) throw lastError;
 
+        // Before the promo popup: the consent banner is the outermost layer, and dismissing it
+        // first stops it covering the promo popup close button at the bottom of the screen.
+        await this.acceptCookieConsentIfVisible();
+
         // The promotion popup shows once, shortly after landing — wait for it and close it.
         await this.closePromotionPopupIfVisible();
     }
 
     async Login(user: { mobile: string; password: string } = userData.user4) {
+        // Confirmed live on GH: a promotional toast (Casino Fixtures campaign) mounts ~3-4s after
+        // any page load AND recurs — goto()'s own dismiss can miss a re-appearance that lands
+        // exactly while this method is filling the form, which then silently fails to submit
+        // (the popup intercepts the field/Enter interaction) and Deposit never shows afterward.
+        await this.closePromotionPopupIfVisible(2000);
+
         // Most regions show the Mobile Number field inline in the header at all times. Some
         // (confirmed live: MW) instead show only a "Login" button, and the inline fields don't
         // render until it's clicked. Detect that case generically rather than branching on region,

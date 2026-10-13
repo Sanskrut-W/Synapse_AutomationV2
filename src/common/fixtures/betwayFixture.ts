@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, Page } from '@playwright/test';
 import path from 'path';
 import * as fs from 'fs';
 import { activeRegion } from '../config/oddsApiUrl';
@@ -94,6 +94,27 @@ type PageFixtures = {
     testData: FullTestData;
 };
 
+/**
+ * Confirmed live on GH: the cookie-consent "Got it" banner and the promo popup (its own
+ * #modal-close-btn) can both be on screen at once, and the promo popup — confirmed recurring, not
+ * a one-time thing — can be the one on top, intercepting a bare `.click()` on "Got it" for the
+ * entire default 60s actionability timeout with no recovery. Every fixture below used to do that
+ * bare click; this dismisses the promo popup first (best-effort) and swallows any remaining
+ * failure, since "Got it" not being there at all (already dismissed, or never shown) is a fine
+ * outcome too.
+ */
+async function dismissCookieBanner(page: Page) {
+    const gotIt = page.getByText('Got it').first();
+    try {
+        await gotIt.click({ timeout: 5000 });
+        return;
+    } catch {
+        const closeBtn = page.locator('#modal-close-btn').filter({ visible: true }).first();
+        await closeBtn.click({ timeout: 3000 }).catch(() => { });
+        await gotIt.click({ timeout: 5000 }).catch(() => { });
+    }
+}
+
 export const test = base.extend<PageFixtures>({
     safeActions: async ({ page }, use) => {
         await use(new SafeActions(page));
@@ -102,28 +123,28 @@ export const test = base.extend<PageFixtures>({
     homePage: async ({ page, safeActions }, use) => {
         const homePage = new HomePage(page, safeActions);
         await homePage.gotoHomePage();
-        await homePage.page.getByText('Got it').first().click();
+        await dismissCookieBanner(homePage.page);
         await use(homePage);
     },
 
     loginPage: async ({ page, safeActions }, use) => {
         const loginPage = new LoginPage(page, safeActions);
         await loginPage.goto();
-        await loginPage.page.getByText('Got it').first().click();
+        await dismissCookieBanner(loginPage.page);
         await use(loginPage);
     },
 
     sportsPage: async ({ page, safeActions }, use) => {
         const sportsPage = new SportsPage(page, safeActions);
         await sportsPage.gotoSportsPage();
-        await sportsPage.page.getByText('Got it').first().click();
+        await dismissCookieBanner(sportsPage.page);
         await use(sportsPage);
     },
 
     casinoPage: async ({ page, safeActions }, use) => {
         const casinoPage = new CasinoPage(page, safeActions);
         await casinoPage.gotoCasino();
-        await casinoPage.page.getByText('Got it').first().click();
+        await dismissCookieBanner(casinoPage.page);
         await use(casinoPage);
     },
 
@@ -159,7 +180,7 @@ export const test = base.extend<PageFixtures>({
     betinfluencerModal: async ({ page, safeActions }, use) => {
         const betinfluencerModal = new BetInfluencerModal(page, safeActions);
         await betinfluencerModal.goto();
-        await betinfluencerModal.page.getByText('Got it').first().click();
+        await dismissCookieBanner(betinfluencerModal.page);
         await use(betinfluencerModal);
     },
 

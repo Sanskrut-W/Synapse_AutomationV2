@@ -1,23 +1,23 @@
 {
   "user1": {
-    "name": "Auto Testing",
-    "mobile": "75678918",
-    "password": "123456789"
+    "name": "Test Test",
+    "mobile": "26798765437",
+    "password": "0123456789"
   },
   "user2": {
-    "mobile": "75678918",
-    "password": "123456789"
+    "mobile": "26798765437",
+    "password": "0123456789"
   },
   "user3": {
-    "mobile": "75678918",
-    "password": "123456789"
+    "mobile": "26798765437",
+    "password": "0123456789"
   },
   "user4": {
-    "mobile": "75678918",
-    "password": "123456789"
+    "mobile": "26798765437",
+    "password": "0123456789"
   },
   "user5": {
-    "mobile": "75678918",
-    "password": "123456789"
+    "mobile": "26798765437",
+    "password": "0123456789"
   }
 }

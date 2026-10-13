@@ -34,13 +34,11 @@ export const ngOverrides: RegionOverrides = {
         // confirmed for GH/TZ/MW, genuinely different from ZA's "How to reset your password".
         howToResetPassword: first(text(/How To Reset Password/i)),
     },
-    signUp: {
-        // Confirmed live: NG's Sign Up form is single-step (like TZ) but built from GH's data-id
-        // fields plus a Territory dropdown unique to NG. Its Mobile Number field uses
-        // input[data-id="MobileNumber"] — the shared base locator (an accessible-name match with
-        // no space, "MobileNumber") matches 0 elements on NG's real DOM.
-        mobileInput: first(css('input[data-id="MobileNumber"]')),
-    },
+    // No signUp overrides: NG's Sign Up form was redesigned again (2026-10-12) to a mobile-only
+    // Step 1 (see SignUpPage.ts's fillBasicInfo NG branch) whose field has no data-id at all —
+    // the old `input[data-id="MobileNumber"]` override this block used to carry no longer matches
+    // anything, and the shared base mobileInput locator (scoped to #reg-content with a
+    // name-spelling-tolerant regex) already covers NG's real field without an override.
     betslip: {
         // Confirmed live: NG needs 3 legs to trigger Win Boost (see winBoostLegs() in
         // betslipSuite.shared.ts) and its tooltip/percentage tier matches GH/TZ/ZM's own
