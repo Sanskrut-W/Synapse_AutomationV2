@@ -23,6 +23,19 @@ export const ghOverrides: RegionOverrides = {
         // Confirmed live: GH's profile avatar renders via a <feeds-avatar-image> custom element,
         // same as TZ — the base locator's alt-text match never exists on GH's site either.
         accountsButton: first(css('feeds-avatar-image')),
+        // Confirmed live 2026-10-16 (header T37): the base locator takes the SECOND button whose
+        // accessible name contains "Deposit". getByRole name matching is a substring match, and
+        // GH's home page also renders casino tiles with aria-label="Deposit Now", so index 1 is
+        // a casino tile far below the fold — the click retried ~106 times against "element is
+        // outside of the viewport" until the 60s timeout. The green header button is the exact
+        // name match. Left as index 1 everywhere else, where it is live-confirmed correct.
+        depositButton: first(role('button', { name: 'Deposit', exact: true })),
+    },
+    betInfluencer: {
+        // Confirmed live 2026-10-16 (NewT2): GH renders a single "Bet Influencer" link, so the
+        // shared .nth(1) waits 5s for an element that does not exist. The Account Options popup
+        // itself opens fine — index 0 is the link this test is asserting on.
+        betInfluencerLink2: first(role('link', { name: 'Bet Influencer' })),
     },
     newHome: {
         // Confirmed live: GH's Casino hero CTA links to /lobby/casino, not ZA's /lobby/casino-games

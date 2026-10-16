@@ -143,11 +143,17 @@ export class GamingLobbyPage extends HeaderPage {
     // --- Core Flows ---
 
     async LogOut() {
-        // Only attempt logout if Deposit is visible (logged in state)
-        if (await this.page.getByRole('button', { name: 'Deposit' }).isVisible()) {
+        // Only attempt logout if Deposit is visible (logged in state).
+        // .first() is load-bearing: getByRole name matching is a substring match, so 'Deposit'
+        // also matches the casino tiles’ "Deposit Now" buttons. On GH that is 3 matches and a
+        // bare isVisible() throws a strict-mode violation instead of answering the question
+        // (confirmed live 2026-10-16, Casino T7). Index 0 is the real header button.
+        if (await this.page.getByRole('button', { name: 'Deposit' }).first().isVisible()) {
             await this.loc.hamburgerMenu.click();
             await this.loc.logOut.click();
-            await this.page.getByRole('button', { name: 'Proceed' }).click();
+            // Same overlay interception already confirmed on NG in SportsPage.LogOut(): the
+            // confirmation modal lays a notice box over its own full-width Proceed button.
+            await this.safeActions.clickThroughOverlay('logOutProceed', this.page.getByRole('button', { name: 'Proceed' }));
         }
     }
 

@@ -83,7 +83,12 @@ export class BetInfluencerModal extends BetslipPage {
         // click-mechanics bug fixed here). Left as-is rather than guessing a workaround.
         await this.page.getByText('My Bets').filter({ visible: true }).first().evaluate((el: HTMLElement) => el.click());
         await this.page.getByText(`Account Options: ${mobile} `);
-        const windowBetInfluencer = this.page.getByRole('link', { name: 'Bet Influencer' }).nth(1);
+        // Was an inline getByRole(...).nth(1), which no region could override. betInfluencerLink2
+        // carries the identical definition, so every region resolves exactly as before — but GH,
+        // whose page renders only ONE "Bet Influencer" link (confirmed live 2026-10-16: the
+        // Account Options popup opens correctly, there simply is no index 1), can now point the
+        // same key at the first match instead of timing out on an element that cannot exist.
+        const windowBetInfluencer = this.loc.betInfluencerLink2;
         await windowBetInfluencer.waitFor({ state: 'visible', timeout: 5000 });
         await highlightElements(windowBetInfluencer);
     }

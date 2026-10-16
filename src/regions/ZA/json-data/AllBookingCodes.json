@@ -82,6 +82,25 @@
           "editedDateTime": "0001-01-01T00:00:00",
           "isDeleted": false,
           "version": 0
+        },
+        {
+          "bookingCode": "BW7A3D29F5",
+          "accountId": "fd120a4e-0374-431b-1b30-08dd8937e8a6",
+          "referenceId": "887ce616-d0ff-4b8e-aecd-b390d97dc4ff",
+          "currencyCode": "ZAR",
+          "createdDate": "2026-10-16T06:32:39.407",
+          "activeUntilDate": "2027-10-16T06:32:38.02",
+          "cumulativeWagerAmount": 1,
+          "amountEarned": 0.04,
+          "amountPaid": 0,
+          "lastPayoutDate": "2026-10-16T06:32:39.407",
+          "timesUsed": 1,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "53e7ecec-1dfd-45c4-9b32-30e2fb2c7275",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
         }
       ]
     }
