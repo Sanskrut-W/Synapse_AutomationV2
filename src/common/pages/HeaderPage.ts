@@ -230,7 +230,8 @@ export class HeaderPage extends HomePage {
         // My Bets, Bonus Summary, Transaction History, Responsible Gaming, Bet Influencer, Promo
         // Voucher, Betway Rewards and Log Out — with 0 DOM matches for 'Document Verification'
         // anywhere on the page while the panel was open.
-        if (!['GH', 'NG', 'ZM'].includes(activeRegion())) {
+        // TZ added 2026-10-16 — see hamburgerMenuSuite test 35 for the evidence.
+        if (!['GH', 'NG', 'ZM', 'TZ'].includes(activeRegion())) {
             await highlightElementBorder(this.loc.documentVerification);
         }
         if (!['MW', 'MZ', 'ZM'].includes(activeRegion())) {

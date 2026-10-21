@@ -1,14 +1,42 @@
 import type { test as BetwayTest } from '../fixtures/betwayFixture';
+import { Page } from '@playwright/test';
 import { ScreenshotHelper } from '../flows/ScreenshotHelper';
 import { activeRegion } from '../config/oddsApiUrl';
+import { bettingUser } from '../config/regionData';
 import { OddsSelectionAbove } from '../flows/OddSelection';
+
+/**
+ * Answers "is the Open Bets list actually empty?" without a fixed wait.
+ *
+ * Every call site here used `isVisible({ timeout: 3000 })` on the empty-state text. Playwright
+ * ignores that `timeout` outright — "@deprecated This option is ignored. locator.isVisible() does
+ * not wait for the element to become visible and returns immediately" (playwright-core's own
+ * types) — so it was an instantaneous snapshot taken right after clickOpenBetsTab(), which does
+ * no waiting of its own. Read while the list is still rendering it returns false, and the run
+ * then blames clickDetailView() for a missing button instead of naming the real cause.
+ *
+ * Race the two genuine outcomes instead: whichever resolves first answers the question, with no
+ * fixed wait in either direction. If NEITHER appears the race rejects and this returns false, so
+ * a genuinely broken page still fails below as a real defect rather than skipping. Same approach
+ * betSaverSuite's T6-9 already uses for the same question.
+ */
+async function hasNoOpenBets(page: Page): Promise<boolean> {
+    const emptyState = page.getByText('There are no available bets for this account');
+    const detailView = page.getByText('Detail View').first();
+    return Promise.race([
+        emptyState.waitFor({ state: 'visible', timeout: 20000 }).then(() => true),
+        detailView.waitFor({ state: 'visible', timeout: 20000 }).then(() => false),
+    ]).catch(() => false);
+}
 
 export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
     test.describe('My Bets Page Functionality', () => {
         // Logs in before any test in this suite
         test.beforeEach(async ({ myBetsPage, testData }) => {
             await myBetsPage.gotoSports();
-            await myBetsPage.login();
+            // Open Bets' T9/T11 need a real bet in the account, which needs a funded one — see
+            // bettingUser(). Same account as login() for every region without an override.
+            await myBetsPage.login(bettingUser());
             // await myBetsPage.closePromotionPopup();
         });
 
@@ -26,7 +54,7 @@ export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
                 // detect it generically instead of hardcoding a region, since any region's shared
                 // demo account can run dry, not just GH's. Place a bet here rather than skip
                 // those checks outright.
-                const noOpenBets = await page.getByText('There are no available bets for this account').isVisible().catch(() => false);
+                const noOpenBets = await hasNoOpenBets(page);
                 if (noOpenBets) {
                     await OddsSelectionAbove(2, 1, page);
                     await myBetsPage.placeBet();
@@ -97,7 +125,7 @@ export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
                 // full 60s action-timeout waiting for a button that structurally cannot exist
                 // (the very same locator/method is confirmed working — see the Settled Bets
                 // Detail View test in this same file, which passed live on this TZ run).
-                const stillNoOpenBets = await page.getByText('There are no available bets for this account').isVisible({ timeout: 3000 }).catch(() => false);
+                const stillNoOpenBets = await hasNoOpenBets(page);
                 test.skip(stillNoOpenBets, 'Account has zero open bets available (insufficient balance) at test time — nothing for Detail View to act on');
 
                 await myBetsPage.clickDetailView(0);
@@ -108,7 +136,7 @@ export function runMyBetSuite(test: typeof BetwayTest, screenshotDir: string) {
             test('T11. Open Bets>>Verify share functionality', async ({ page, myBetsPage }, testInfo) => {
                 // See T9 above — same live-confirmed TZ zero-balance state leaves Open Bets empty,
                 // so Share (also index 0 of the open-bets list) has nothing real to act on either.
-                const stillNoOpenBets = await page.getByText('There are no available bets for this account').isVisible({ timeout: 3000 }).catch(() => false);
+                const stillNoOpenBets = await hasNoOpenBets(page);
                 test.skip(stillNoOpenBets, 'Account has zero open bets available (insufficient balance) at test time — nothing for Share to act on');
 
                 await myBetsPage.clickShare(0);

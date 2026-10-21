@@ -6,7 +6,65 @@
       "size": 20,
       "hasNextPage": false,
       "hasPreviousPage": false,
-      "result": []
+      "result": [
+        {
+          "bookingCode": "BW77B0437E",
+          "accountId": "38d2efda-6cdc-472f-bf48-08dd1aa86a9c",
+          "referenceId": "36b4e236-7a1e-49f4-9507-17c6e06546ab",
+          "currencyCode": "MWK",
+          "createdDate": "2026-10-16T11:02:10.053",
+          "activeUntilDate": "2027-10-16T11:02:09.903",
+          "cumulativeWagerAmount": 10,
+          "amountEarned": 0.4,
+          "amountPaid": 0.4,
+          "lastPayoutDate": "2026-10-16T14:23:35.467",
+          "timesUsed": 1,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "6ce88c98-e563-47ca-8bb7-a524d209bfea",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
+        },
+        {
+          "bookingCode": "BW77BB63E0",
+          "accountId": "38d2efda-6cdc-472f-bf48-08dd1aa86a9c",
+          "referenceId": "1de6afd0-ff18-42b2-8a04-f76b757cd6d4",
+          "currencyCode": "MWK",
+          "createdDate": "2026-10-16T11:15:41.393",
+          "activeUntilDate": "2027-10-16T11:15:41.167",
+          "cumulativeWagerAmount": 10,
+          "amountEarned": 0.4,
+          "amountPaid": 0.4,
+          "lastPayoutDate": "2026-10-16T14:23:23.193",
+          "timesUsed": 1,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "146d6b68-6035-4410-8fb8-a23730278a29",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
+        },
+        {
+          "bookingCode": "BW7B3A0D1D",
+          "accountId": "38d2efda-6cdc-472f-bf48-08dd1aa86a9c",
+          "referenceId": "19e4f881-9212-49a1-b62e-e9d8f7afce36",
+          "currencyCode": "MWK",
+          "createdDate": "2026-10-19T17:00:30.627",
+          "activeUntilDate": "2027-10-19T17:00:30.263",
+          "cumulativeWagerAmount": 10,
+          "amountEarned": 0.4,
+          "amountPaid": 0,
+          "lastPayoutDate": "2026-10-19T17:00:30.627",
+          "timesUsed": 1,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "a209beca-e2fc-481a-b78c-ba06fc2fa803",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
+        }
+      ]
     }
   ]
 }

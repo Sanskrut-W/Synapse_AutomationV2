@@ -59,6 +59,7 @@ export function runSportsGridSuite(test: typeof BetwayTest, screenshotDir: strin
                 await sportsPage.gotoSportsPage();
                 await sportsPage.openAZSportsPanel();
                 await sportsPage.clickSportInAZPanel(sportName);
+                
                 await expect(page).toHaveURL(new RegExp(`${expectedPath}$`), { timeout: 15000 });
                 await ScreenshotHelper(page, screenshotDir, `T2-sport-${sportName.replace(/\s+/g, '-')}`, testInfo);
             });

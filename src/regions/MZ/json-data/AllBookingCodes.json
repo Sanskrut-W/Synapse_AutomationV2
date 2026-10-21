@@ -6,7 +6,46 @@
       "size": 20,
       "hasNextPage": false,
       "hasPreviousPage": false,
-      "result": []
+      "result": [
+        {
+          "bookingCode": "BW7844840F",
+          "accountId": "975239c8-b430-4d3b-77b8-08dcb5d2ffa8",
+          "referenceId": "69343450-b6bc-40cc-b09b-0cb45ee49513",
+          "currencyCode": "MZN",
+          "createdDate": "2026-10-16T11:43:33.16",
+          "activeUntilDate": "2027-10-16T11:43:32.987",
+          "cumulativeWagerAmount": 10,
+          "amountEarned": 0.4,
+          "amountPaid": 0.4,
+          "lastPayoutDate": "2026-10-16T14:22:32.203",
+          "timesUsed": 2,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "711fe93d-4a04-40f1-a3a9-5ad18cfb5b89",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
+        },
+        {
+          "bookingCode": "BW79254905",
+          "accountId": "975239c8-b430-4d3b-77b8-08dcb5d2ffa8",
+          "referenceId": "ab770ed9-213c-4112-b02b-37b31fcd2aa2",
+          "currencyCode": "MZN",
+          "createdDate": "2026-10-16T12:13:32.55",
+          "activeUntilDate": "2027-10-16T12:13:32.573",
+          "cumulativeWagerAmount": 10,
+          "amountEarned": 0.4,
+          "amountPaid": 0.4,
+          "lastPayoutDate": "2026-10-16T14:21:17.733",
+          "timesUsed": 2,
+          "lastPayoutTimesUsedStamp": 0,
+          "id": "700e43de-896b-462e-b834-ea0dcf38a449",
+          "editedById": "00000000-0000-0000-0000-000000000000",
+          "editedDateTime": "0001-01-01T00:00:00",
+          "isDeleted": false,
+          "version": 0
+        }
+      ]
     }
   ]
 }

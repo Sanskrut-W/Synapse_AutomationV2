@@ -1,5 +1,5 @@
 import { RegionOverrides } from '../../common/locators/sel';
-import { css, last, text, first } from '../../common/locators/sel';
+import { css, last, text, first, role } from '../../common/locators/sel';
 
 /**
  * TZ (Tanzania) overrides — confirmed against the old repo's src/regions/TZ/pages/*.ts.
@@ -25,6 +25,14 @@ export const tzOverrides: RegionOverrides = {
         // not an <img alt="MatkaKing profile avatar"> like ZA — that alt text doesn't exist on
         // TZ's site at all (its only two header <img> alts are the region flag and an unlabeled logo).
         accountsButton: first(css('feeds-avatar-image')),
+        // Confirmed live 2026-10-16 (header 37 and hamburgerMenu 24 x2): identical cause to GH.
+        // getByRole name matching is a SUBSTRING match, so the shared Deposit name option also
+        // matches the casino tiles’ aria-label="Deposit Now" buttons. That pushes the real green
+        // header button off index 1, and the click retried against a far-below-the-fold casino
+        // tile ("element is not stable", then "outside of the viewport") until the 60s timeout.
+        // Exact name match pins the header button. Base stays at index 1 for the regions where
+        // it is live-confirmed correct.
+        depositButton: first(role('button', { name: 'Deposit', exact: true })),
     },
     newHome: {
         // Confirmed live: TZ's Casino hero CTA links to /lobby/casino/all, not ZA's /lobby/casino-games.

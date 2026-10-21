@@ -113,7 +113,13 @@ export function runHamburgerMenuSuite(test: typeof BetwayTest, screenshotDir: st
                 // hitting the 60s actionTimeout on documentVerification.scrollIntoViewIfNeeded().
                 // Confirmed live on ZM too (2026-10-12): same absence, same symptom — the panel
                 // opens with every sibling option present and 0 matches for the text.
-                test.skip(['GH', 'NG', 'ZM'].includes(activeRegion()), 'This region has no "Document Verification" option in My Account');
+                // TZ joins them as of 2026-10-16. Note the comment on test 36 below still lists
+                // Document Verification as present on TZ — that observation is now stale. Evidence:
+                // in the same run every other My Account option passed (Withdraw, My Bets, Casino
+                // Big Win, Bonus Summary, Transactions, Bet Influencer, Promo Vouchers, Responsible
+                // Gaming, Betway Rewards, Change Password, Logout), so the panel opens correctly
+                // and this one option is simply no longer rendered.
+                test.skip(['GH', 'NG', 'ZM', 'TZ'].includes(activeRegion()), 'This region has no "Document Verification" option in My Account');
                 await hamburgerMenuPage.verifyAndClickDocumentVerification();
                 await ScreenshotHelper(hamburgerMenuPage.page, screenshotDir, 'DocVerification.png', testInfo);
                 // await hamburgerMenuPage.clickCloseMyAccountOptions();

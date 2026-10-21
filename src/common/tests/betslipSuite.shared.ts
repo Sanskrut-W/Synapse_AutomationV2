@@ -21,9 +21,38 @@ async function hasZeroBalance(page: Page): Promise<boolean> {
     // as a match, regardless of the actual amount) — any balance ending in a whole ten/hundred
     // with ".00" cents (100.00, 300.00, 4300.00, ...) was misread as zero. Parse the actual number
     // and compare it, not a loose substring.
-    const match = text.match(/[\d,]+\.\d{2}/);
-    if (!match) return false;
-    return parseFloat(match[0].replace(/,/g, '')) === 0;
+    const amount = parseBalanceAmount(text);
+    return amount !== null && amount === 0;
+}
+
+/**
+ * Parses a header balance into a number, whichever way the region formats it.
+ *
+ * The previous `/[\d,]+\.\d{2}/` only matched a DOT decimal separator ("R 1,234.56",
+ * "TSh 0.00"). MZ writes its Metical amounts the other way round — comma for decimals and a
+ * space for thousands ("MT 2,59", "MT 265 750,00", confirmed live 2026-10-19 — see the balance
+ * in regions/MZ/screenshots/smoke/betslip/T29-betslip-insufficient-funds-error.png.png). The
+ * regex simply never matched there, the function returned false by its own `if (!match)` guard,
+ * and so an MZ balance of literally zero would still read as "not zero" and let the balance-
+ * dependent tests run on an unfunded account instead of skipping with the real reason.
+ *
+ * Rather than branch per region, work out the decimal separator from the text: whichever of
+ * `.` or `,` comes last AND leaves exactly two digits after it is the decimal point; every other
+ * separator is a grouping character and is dropped.
+ */
+function parseBalanceAmount(text: string): number | null {
+    // Grouping can be a space or a non-breaking space ("MT 265 750,00"), so allow both inside.
+    const match = text.match(/\d[\d.,  ]*\d|\d/);
+    if (!match) return null;
+
+    let token = match[0].replace(/[  ]/g, '');
+    const sepIndex = Math.max(token.lastIndexOf('.'), token.lastIndexOf(','));
+    token = sepIndex >= 0 && token.length - sepIndex - 1 === 2
+        ? token.slice(0, sepIndex).replace(/[.,]/g, '') + '.' + token.slice(sepIndex + 1)
+        : token.replace(/[.,]/g, '');
+
+    const value = parseFloat(token);
+    return Number.isNaN(value) ? null : value;
 }
 
 // TZ/GH/ZM/NG's Win Boost tiers need 3 legs to reach the first real tier (3%, tooltip "Win Boost

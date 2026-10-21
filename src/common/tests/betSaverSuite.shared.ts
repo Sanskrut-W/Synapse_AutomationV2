@@ -25,7 +25,19 @@ export function runBetSaverSuite(test: typeof BetwayTest, screenshotDir: string)
             // instead of burning clickDetailViewButton's 5s timeout plus
             // verifyBetSaverTextVisibleInDetail's own 15s+reload+15s retry chain on a Detail View
             // button that structurally cannot exist when nothing was placed.
-            const noBetsPlaced = await page.getByText('There are no available bets for this account').isVisible({ timeout: 3000 }).catch(() => false);
+            // The guard above used a fixed 3s isVisible() on the empty-state text. Confirmed live
+            // 2026-10-16 on TZ (and the same failure shape on MZ and ZM): that window can expire
+            // while My Bets is still rendering, so it returns false, the test proceeds, and the
+            // run blames clickDetailViewButton() for a missing element instead of naming the real
+            // zero-balance cause. Race the two genuine outcomes instead — whichever resolves first
+            // answers the question, with no fixed wait in either direction. If NEITHER appears the
+            // race rejects, this stays false, and the test fails below as a real defect should.
+            const emptyState = page.getByText('There are no available bets for this account');
+            const detailView = page.getByText('Detail View').first();
+            const noBetsPlaced = await Promise.race([
+                emptyState.waitFor({ state: 'visible', timeout: 20000 }).then(() => true),
+                detailView.waitFor({ state: 'visible', timeout: 20000 }).then(() => false),
+            ]).catch(() => false);
             test.skip(noBetsPlaced, 'Account had zero balance at test time — Bet Now did not actually place a bet, so there is nothing in My Bets for Detail View to act on');
 
             // T7 Detail View — BetSaver text SHOULD be visible

@@ -6,7 +6,11 @@
   "scripts": {
     "test:playwright": "playwright test --config=playwright.ZA.config.ts",
     "allure:generate": "allure generate src/regions/ZA/reports/allure-results --clean -o src/regions/ZA/reports/allure-report",
-    "test:with-allure": "npm run test:playwright && npm run allure:generate"
+    "test:with-allure": "npm run test:playwright && npm run allure:generate",
+    "bi:daily": "playwright test --config=playwright.influencer.config.ts --grep daily",
+    "bi:payout": "playwright test --config=playwright.influencer.config.ts --grep payout",
+    "bi:daily:all": "node scripts/run-influencer.mjs daily",
+    "bi:payout:all": "node scripts/run-influencer.mjs payout"
   },
   "keywords": [],
   "author": "",

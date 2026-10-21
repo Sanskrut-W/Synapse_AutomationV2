@@ -2,7 +2,7 @@ import { test as base, Page } from '@playwright/test';
 import path from 'path';
 import * as fs from 'fs';
 import { activeRegion } from '../config/oddsApiUrl';
-import { loadRegionData } from '../config/regionData';
+import { loadRegionData, bettingUser } from '../config/regionData';
 import { SafeActions } from '../actions/SafeActions';
 
 import { HomePage } from '../pages/HomePage';
@@ -237,7 +237,9 @@ export const test = base.extend<PageFixtures>({
     betSaverPage: async ({ page, safeActions }, use) => {
         const betSaverPage = new BetSaverPage(page, safeActions);
         await betSaverPage.goto();
-        await betSaverPage.Login();
+        // This module's T6-9 has to place a real 7-leg bet, so it needs an account with money in
+        // it — see bettingUser(). Identical to Login() for every region that defines no override.
+        await betSaverPage.Login(bettingUser());
         await use(betSaverPage);
     },
 
